@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "scripts": {
+    "dev:intro": "slidev slides/intro.md --open"
+  },
+  "devDependencies": {
+    "@slidev/cli": "^53",
+    "@slidev/theme-default": "^0.25"
+  }
+}

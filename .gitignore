@@ -1,0 +1,19 @@
+# python generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# venv
+.venv
+
+# node
+node_modules/
+
+# generated assets
+public/figures/*
+!public/figures/.gitkeep
+public/animations/*
+!public/animations/.gitkeep

@@ -1,0 +1,32 @@
+[project]
+name = "learn-dynamical-system"
+version = "0.1.0"
+description = "力学系を学ぶための教材プロジェクト"
+authors = [
+    { name = "kdingn", email = "koukou3335@gmail.com" }
+]
+dependencies = [
+    "matplotlib",
+    "scienceplots",
+    "numpy",
+    "scipy",
+]
+readme = "README.md"
+requires-python = ">= 3.12"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.rye.scripts]
+figures = "python -m learn_dynamical_system.figures"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/learn_dynamical_system"]
