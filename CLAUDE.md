@@ -15,7 +15,7 @@
 ## コマンド
 
 - `rye run figures` — 全図を一括生成して `public/figures/` に出力
-- `npm run dev:intro` — Slidev 開発サーバーを起動
+- `npm run dev -- slides/<name>.md` — Slidev 開発サーバーを起動
 
 ## スタイル規約
 
@@ -25,4 +25,4 @@
 ## 検証手順
 
 - figure スクリプトを追加・変更したら `rye run figures` を実行し、エラーなく完了することを確認する
-- スライドに画像を追加したら `npm run dev:intro` でビルドエラーが出ないことを確認する
+- スライドに画像を追加したら `npm run dev -- slides/<name>.md` でビルドエラーが出ないことを確認する

@@ -18,8 +18,8 @@ npm ci
 # 全図を一括生成 → public/figures/ に出力
 rye run figures
 
-# Slidev 開発サーバーを起動
-npm run dev:intro
+# Slidev 開発サーバーを起動（スライドファイルを指定）
+npm run dev -- slides/intro.md
 ```
 
 ### ディレクトリ構成
