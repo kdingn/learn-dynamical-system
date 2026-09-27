@@ -17,3 +17,7 @@ public/
 
 # スライドのレイアウト確認用に書き出した PNG
 .slides-check/
+
+# manim の作業ファイル（apply() を通さず Scene/Text を作ると
+# 既定の media_dir としてリポジトリ直下に出る）
+media/

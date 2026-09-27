@@ -23,7 +23,11 @@ managed = true
 dev-dependencies = []
 
 [tool.rye.scripts]
-figures = "python -m learn_dynamical_system.figures"
+# `rye run figures` で public/ 配下の生成物を一括で作る（図 → 動画の順）。
+# 個別に回したいときは下の 2 つを直接呼ぶ。
+figures = { chain = ["figures:images", "figures:animations"] }
+"figures:images" = "python -m learn_dynamical_system.figures"
+"figures:animations" = "python -m learn_dynamical_system.animations"
 check-slides = "python scripts/check_slides.py"
 
 [tool.hatch.metadata]
