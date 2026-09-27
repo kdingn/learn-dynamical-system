@@ -23,17 +23,123 @@
 - `rye run figures` — 全図を一括生成して `public/figures/` に出力
 - `npm run dev` — 目次スライド（intro.md）を起動
 - `npm run dev:01` — Ch.1 のスライドを起動（章が増えたら `dev:02`, `dev:03`, ... を追加）
+- `npm run check:01` — Ch.1 を PNG に書き出してレイアウトを機械チェック
+  （実体は `rye run check-slides slides/01-basics.md`。`--keep <dir>` で PNG を残せる）
 
 ## スタイル規約
 
 - `style.apply()` を各 figure スクリプト先頭で呼ぶ
 - 色は `palette.py` の定数を使う（ハードコード禁止）
+  - `facecolor="white"` のような個別指定もしない。背景色・枠色は
+    `style.apply()` の rcParams（透過）に任せる
+  - matplotlib 組み込みのカラーマップ（`coolwarm` など）も使わない。中間色が
+    背景に埋もれるため、`style.sequential_cmap(...)` で palette から作る
+
+### テーマは dark に固定する
+
+- 各スライドの headmatter に `colorSchema: dark` を書く。
+  Slidev の既定は `auto` で、**閲覧環境の設定次第で背景が白にも黒にもなる**。
+  図は透過 PNG でテーマに追従できないため、固定しないと文字が背景に埋もれる
+- `palette.py` は背景 `#121212` / 本文 `#ddd`（`@slidev/client/uno.config.ts`）を
+  前提にコントラストを取っている。テーマを変えるなら `colorSchema` と
+  `palette.py` を必ずセットで変更する
+- `check_slides.py` は headmatter を読んで `--dark` を付けて書き出すので、
+  チェック結果は実際の見え方と一致する
+
+## 図のサイズとフォント（スライドに載せる図の作り方）
+
+図の文字がスライド本文と違う大きさに見える原因は、ほぼ**図の縮小表示**にある。
+これを防ぐため、図は**スライド上の表示サイズちょうどで作り、等倍で貼る**。
+
+- figsize は `style.slot(width_px, height_px)` で CSS px から逆算する
+- スライド側は同じ px で表示する — `<img ... style="width: {width_px}px" />`
+- スロットの値は figure スクリプトの `SLOT_*` 定数に置き、**md 側の `width` と一致させる**
+  （ずれた瞬間に拡大縮小がかかり、フォントが本文と合わなくなる）
+- フォントは `style.apply()` が設定する `BASE_FONT_PT`(13.2) / `SMALL_FONT_PT` に任せ、
+  個別の `fontsize=` 指定は原則書かない
+- `savefig.bbox="tight"` は使わない。出力画素数が figsize からずれて等倍の前提が壊れる。
+  余白は `constrained_layout`（`style.apply()` で有効化済み）で詰める
+- **見出し・キャプションとの間隔は、スライド側の margin ではなく図の外周 pad で取る**
+  （`style.FIGURE_PAD_PX = 20`）。理由は下記
+- 複数パネルの図では、どのタイトル・軸がどのパネルのものか分かるよう、
+  パネル間を離す（`constrained_layout.wspace/hspace = 0.09`。既定の 0.02 は詰まりすぎ）
+- ラベル同士・ラベルと軸線の重なりは書き出した PNG でしか分からない。
+  フォントを大きくすると新たに衝突するので、目視確認で必ず見る
+
+根拠となる実寸（`@slidev/parser`, `@slidev/client/styles/layouts-base.css` より）:
+
+| 項目 | 値 |
+|------|-----|
+| キャンバス | 980 × 551.25 CSS px（`canvasWidth: 980`, 16:9） |
+| `.slidev-layout` のパディング | `px-14 py-10` = 左右 56px / 上下 40px |
+| 内容領域 | 868 × 471.25 px |
+| 本文 | `text-[1.1rem]` = 17.6px |
+| `h2` 見出し | `text-3xl` = 30px（行高 36px） |
+
+つまり `h2` + 図だけのスライドなら図に使える高さは約 **420px**、
+キャプションを1〜2行入れるなら **330〜380px** が上限。
+
+### 間隔は「図の外周 pad」で取る（スライド側の margin ではなく）
+
+matplotlib の既定の外周 pad は `0.04167in` = **4 CSS px** しかなく、そのままでは
+見出しやキャプションに図が接触して見える。これを `style.FIGURE_PAD_PX`(20px) に
+広げてある。スライド側に margin を足す方式より、次の点で扱いやすい:
+
+- `constrained_layout` は**外周 pad を確保してからパネルを配置する**ので、
+  pad を入れてもパネルの配置ロジックにしわ寄せが行かない
+- PNG の画素数は SLOT のまま変わらない。つまり **SLOT_* の値がそのまま
+  「スライド上で占める総量」**になり、上の高さ計算に margin を足し引きしなくて済む
+- 図ごとに margin を書く必要がないので、書き忘れによる接触が構造的に起きない
+
+実測（Ch.1 の図スライド）: 見出し下端から図の上端まで **27〜30px**。
+pad を入れる前は約 7.5px だった。
+
+### アスペクト固定は内部余白の原因になる
+
+`set_aspect("equal")` を掛けた軸は正方形に固定されるため、横長のスロットに
+置くと**図の内側に**大きな余白ができる（`eigenvalue_plane` では左右に
+120px / 82px あった）。等方性が意味を持たない模式図では掛けない。
+
+逆に、等方性が必要な図（相図など）を格子に並べると、パネルの大きさは
+**行の高さだけで決まり、幅を広げても大きくならない**。大きくしたいときは
+タイトルの行数・目盛・軸ラベルといった縦方向のオーバーヘッドを削るか、
+段数を減らす（スライドを分ける）。
 
 ## スタイル規約（スライド）
 
 - スライドの frontmatter に `transition` を設定しない（アニメーションなし）
 - `<v-click>` などの段階表示も使わない
 - 図のラベル・凡例は英語（matplotlib のフォントが日本語非対応のため）
+- **図を載せるスライドは「見出し + 図 + 説明1〜3行」に留める**。
+  本文が多くて収まらないなら、図を別スライドに分けるか2カラムにする。
+  図を小さくして詰め込むのは禁止（文字が本文と合わなくなり読めなくなる）
+- 2カラムは `<div class="grid grid-cols-[1fr_{width_px}px] gap-8 items-center">` で、
+  図の列幅をスロットの px に合わせる
+
+## 記号の規約（数式）
+
+章をまたいで記号を揃える。ここがぶれると、同じ量が章ごとに別物に見える。
+
+| 量 | 記号 | 備考 |
+|----|------|------|
+| 状態ベクトル | $\boldsymbol{q}$ | 流体・ROM の文献に合わせる。成分は $q_1, q_2, \dots$ |
+| 固定点 | $\boldsymbol{q}^*$ | |
+| ベクトル場 / 写像 | $\boldsymbol{f}$, $\boldsymbol{F}$ | |
+| 摂動（固定点からのずれ） | $\boldsymbol{\xi}$ | 状態そのものではないので $q$ にしない |
+| 零ベクトル | $\boldsymbol{0}$ | スカラーの $0$ と区別する |
+| ヤコビアン | $J = D\boldsymbol{f}(\boldsymbol{q}^*)$ | |
+| 固有値 / 固有ベクトル | $\lambda_k$, $\boldsymbol{v}_k$ | |
+
+- **ベクトルの太字は `\boldsymbol` を使い、`\mathbf` は使わない**
+  - `\mathbf` はボールド立体（セリフ）で角ばって見える。`\boldsymbol` はボールド
+    イタリックで、ISO 80000-2 のベクトル表記もこちら
+  - `\mathbf` はギリシャ文字に効かないので、混在させると $\boldsymbol{\xi}$ だけ
+    字形が変わってしまう
+- **図の軸ラベルは本文と同じ記号にする**。本文が $\boldsymbol{q}$ なのに図が
+  $x_1, x_2$ だと別の量に見える。記号を変えるときは `slides/*.md` と
+  `figures/*.py` の両方を必ず一緒に直す
+- 物理的に意味のある変数（単振り子の $\theta, \omega$ など）は、抽象的な状態
+  ベクトルとは役割が違うので無理に $q$ に統一しない
 
 ## 検証手順
 
@@ -42,8 +148,46 @@
   `--no-open` 付きで起動し、画像が配信されること・import エラーが出ないことを確認する
   - **ステータスコードだけ見てはいけない**: Slidev は SPA なので存在しないパスにも
     `index.html` を 200 で返す。`Content-Type` が `image/png` であることまで確認する
+- **章を書き終えたら、必ず最後にスライドの全容を確認する**（図を後から足した場合は特に）
+  1. `npm run check:01` を実行し、全スライドが `OK` になるまで直す
+     - `CLIP` = 内容がキャンバス端で切れている（最優先で修正）
+     - `TIGHT` = 切れてはいないがパディング帯に食い込んでいる
+     - `GAP` = 内容領域の占有率が低く、余白が不自然に多い
+  2. 機械チェックを通したうえで、`--keep` で残した PNG を**全枚数目視する**。
+     figure のフォントが本文と同じ大きさに見えるか、余白が偏っていないかを見る
+  3. 収まらないスライドは、図を縮めるのではなく**分割する**（上記スライド規約）
   - 例: `npx slidev --no-open slides/01-basics.md` →
     `curl -s -D - -o /dev/null http://localhost:3030/figures/<name>.png | grep -i content-type`
+
+## 章を追加するとき
+
+1. `src/learn_dynamical_system/figures/chNN.py` を作り、`figures/__main__.py` から呼ぶ
+2. 図ごとに `SLOT_*` 定数を決めてから描く（先にスライド上の置き場所を決める）
+3. `slides/NN-*.md` を作る。headmatter に `colorSchema: dark` を忘れない
+4. `package.json` に **`dev:NN` と `check:NN` の両方**を追加する
+   （`check:NN` は `rye run check-slides slides/NN-*.md --keep .slides-check`）
+5. `rye run figures` → `npm run check:NN` → PNG を全枚数目視
+
+## 環境・編集上のハマりどころ
+
+実際に踏んだもの。同じ失敗を繰り返さないために残す。
+
+- **LaTeX を含む md をシェル経由で書かない**。`cat > file <<'EOF'` のように
+  ヒアドキュメントをクォートしても `\\` が `\` に潰れ、`\begin{cases}` や
+  `pmatrix` の改行が壊れる（レンダリング結果が1行に潰れるだけなので気づきにくい）。
+  Write / Edit ツールで直接書くこと。同じ理由で、検証のための `grep` パターンも
+  シェル経由だと壊れるので、確認はファイルを直接読むほうが確実
+- **`public/figures/` は図をリネーム・分割しても古い PNG が残る**。参照が消えた
+  ファイルは配信され続けるので気づけない。名前を変えたときは
+  `rm -rf public && rye run figures` で作り直して確認する
+- **Windows では `npx` の出力が cp932 で decode 失敗する**。`subprocess` は
+  `encoding="utf-8", errors="replace"` を指定する（`check_slides.py` 対応済み）。
+  日本語を print するスクリプトは `sys.stdout.reconfigure(encoding="utf-8")` も必要
+- **クローン直後は `playwright-chromium` のブラウザが落ちてこない**。npm が
+  install script をブロックするため、`npm install-scripts approve playwright-chromium`
+  を実行する。これをしないと `npm run check:NN` が export で失敗する
+- 起動時に出る `Failed to patch FloatingVue ... reading 'Popper'` は Slidev 53 と
+  floating-vue の既知の警告。twoslash のツールチップ以外に影響しないので無視してよい
 
 ## カリキュラム
 

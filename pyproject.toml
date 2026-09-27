@@ -24,6 +24,7 @@ dev-dependencies = []
 
 [tool.rye.scripts]
 figures = "python -m learn_dynamical_system.figures"
+check-slides = "python scripts/check_slides.py"
 
 [tool.hatch.metadata]
 allow-direct-references = true

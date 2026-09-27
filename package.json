@@ -2,10 +2,15 @@
   "private": true,
   "scripts": {
     "dev": "slidev --open slides/intro.md",
-    "dev:01": "slidev --open slides/01-basics.md"
+    "dev:01": "slidev --open slides/01-basics.md",
+    "check:01": "rye run check-slides slides/01-basics.md --keep .slides-check"
   },
   "devDependencies": {
     "@slidev/cli": "^53",
-    "@slidev/theme-default": "^0.25"
+    "@slidev/theme-default": "^0.25",
+    "playwright-chromium": "^1.63.0"
+  },
+  "allowScripts": {
+    "playwright-chromium@1.63.0": true
   }
 }
