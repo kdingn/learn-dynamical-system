@@ -9,23 +9,31 @@
 ## アーキテクチャ
 
 - Python 側は `public/figures/` および `public/animations/` に生成物を出力する
-- Slidev 側は `public/` を静的アセットとして参照する
+- Slidev 側は `slides/public/` を静的アセットとして参照する（`slides/public` → `../public` のシンボリックリンク）
 - `slides/` + `public/` + `package.json` を切り出せば Slidev 単独プロジェクトとして独立できる
 
 ## コマンド
 
 - `rye run figures` — 全図を一括生成して `public/figures/` に出力
-- `npm run dev -- slides/<name>.md` — Slidev 開発サーバーを起動
+- `npm run dev` — 目次スライド（intro.md）を起動
+- `npm run dev:01` — Ch.1 のスライドを起動（章が増えたら `dev:02`, `dev:03`, ... を追加）
 
 ## スタイル規約
 
 - `style.apply()` を各 figure スクリプト先頭で呼ぶ
 - 色は `palette.py` の定数を使う（ハードコード禁止）
 
+## スタイル規約（スライド）
+
+- スライドの frontmatter に `transition` を設定しない（アニメーションなし）
+- `<v-click>` などの段階表示も使わない
+- 図のラベル・凡例は英語（matplotlib のフォントが日本語非対応のため）
+
 ## 検証手順
 
 - figure スクリプトを追加・変更したら `rye run figures` を実行し、エラーなく完了することを確認する
-- スライドに画像を追加したら `npm run dev -- slides/<name>.md` でビルドエラーが出ないことを確認する
+- スライドに画像を追加したら Slidev を `--no-open` 付きで起動し、画像が HTTP 200 で配信されること・import エラーが出ないことを確認する
+  - 例: `npx slidev --no-open slides/01-basics.md` → `curl -s -o /dev/null -w "%{http_code}" http://localhost:3030/figures/<name>.png`
 
 ## カリキュラム
 
