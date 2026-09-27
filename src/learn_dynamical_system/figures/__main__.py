@@ -13,7 +13,9 @@ def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     print(f"Output directory ready: {OUTPUT_DIR}")
 
-    # TODO: Import and call individual figure scripts here.
+    from learn_dynamical_system.figures import ch01
+
+    ch01.generate_all(OUTPUT_DIR)
 
 
 if __name__ == "__main__":

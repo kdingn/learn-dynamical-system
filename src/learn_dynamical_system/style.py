@@ -1,10 +1,14 @@
 """Matplotlib rcParams shared configuration.
 
 Call ``apply()`` at the top of every figure script to ensure a consistent look.
+Figures use transparent backgrounds with light-coloured text/axes so they
+blend naturally into dark-themed Slidev slides.
 """
 
 import matplotlib.pyplot as plt
 import scienceplots  # noqa: F401  (registers styles on import)
+
+from learn_dynamical_system.palette import FG
 
 
 def apply() -> None:
@@ -24,5 +28,18 @@ def apply() -> None:
             "figure.dpi": 150,
             "savefig.dpi": 300,
             "savefig.bbox": "tight",
+            # --- dark-slide support: transparent bg + light foreground ---
+            "figure.facecolor": "none",
+            "axes.facecolor": "none",
+            "savefig.facecolor": "none",
+            "savefig.transparent": True,
+            "text.color": FG,
+            "axes.labelcolor": FG,
+            "axes.edgecolor": FG,
+            "xtick.color": FG,
+            "ytick.color": FG,
+            "legend.facecolor": "none",
+            "legend.edgecolor": "none",
+            "legend.labelcolor": FG,
         }
     )

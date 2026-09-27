@@ -1,7 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "dev": "slidev --open"
+    "dev": "slidev --open slides/intro.md",
+    "dev:01": "slidev --open slides/01-basics.md"
   },
   "devDependencies": {
     "@slidev/cli": "^53",
