@@ -12,8 +12,5 @@ wheels/
 # node
 node_modules/
 
-# generated assets
-public/figures/*
-!public/figures/.gitkeep
-public/animations/*
-!public/animations/.gitkeep
+# generated assets (rye run figures / manim が生成時にディレクトリごと作る)
+public/

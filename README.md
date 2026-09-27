@@ -29,5 +29,6 @@ npm run dev -- slides/intro.md
 | `src/learn_dynamical_system/models/` | 力学系モデル定義 |
 | `src/learn_dynamical_system/figures/` | 画像生成スクリプト |
 | `slides/` | Slidev スライド (.md) |
+| `slides/vite.config.mts` | Slidev の `publicDir` を直下の `public/` に向ける設定 |
 | `public/figures/` | 生成された画像（gitignore） |
 | `public/animations/` | 生成された動画（gitignore） |

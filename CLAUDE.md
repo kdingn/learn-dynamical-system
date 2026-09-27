@@ -9,7 +9,13 @@
 ## アーキテクチャ
 
 - Python 側は `public/figures/` および `public/animations/` に生成物を出力する
-- Slidev 側は `slides/public/` を静的アセットとして参照する（`slides/public` → `../public` のシンボリックリンク）
+  - 生成スクリプトは出力先を `mkdir(parents=True, exist_ok=True)` で自分で作る
+    （`public/` 配下は丸ごと gitignore。`.gitkeep` は置かない）
+- Slidev の `publicDir` は `slides/vite.config.mts` でリポジトリ直下の `public/` に向けている
+  - Slidev の既定は `dirname(entry)/public`（= `slides/public`）だが、リンクや複製で
+    同じ画像が2つのパスに見えるのを避けるため設定で上書きしている
+  - 拡張子は `.mts`。`package.json` に `"type": "module"` がないため `.ts` だと
+    CommonJS 扱いになり Vite が警告を出す
 - `slides/` + `public/` + `package.json` を切り出せば Slidev 単独プロジェクトとして独立できる
 
 ## コマンド
@@ -32,8 +38,12 @@
 ## 検証手順
 
 - figure スクリプトを追加・変更したら `rye run figures` を実行し、エラーなく完了することを確認する
-- スライドに画像を追加したら Slidev を `--no-open` 付きで起動し、画像が HTTP 200 で配信されること・import エラーが出ないことを確認する
-  - 例: `npx slidev --no-open slides/01-basics.md` → `curl -s -o /dev/null -w "%{http_code}" http://localhost:3030/figures/<name>.png`
+- スライドに画像を追加したら、先に `rye run figures` で PNG を生成してから Slidev を
+  `--no-open` 付きで起動し、画像が配信されること・import エラーが出ないことを確認する
+  - **ステータスコードだけ見てはいけない**: Slidev は SPA なので存在しないパスにも
+    `index.html` を 200 で返す。`Content-Type` が `image/png` であることまで確認する
+  - 例: `npx slidev --no-open slides/01-basics.md` →
+    `curl -s -D - -o /dev/null http://localhost:3030/figures/<name>.png | grep -i content-type`
 
 ## カリキュラム
 
