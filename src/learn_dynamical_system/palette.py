@@ -1,18 +1,27 @@
-"""Shared colour palette for matplotlib and manim."""
+"""Shared colour palette for matplotlib and manim.
 
-# Foreground colour for text, axes, ticks on dark slide backgrounds.
-FG = "#d4d4d4"
+スライドは暗いテーマ（`colorSchema: dark`）に固定しているため、色は
+**暗背景でのコントラスト**を基準に選んでいる。
+背景は `#121212`、本文の文字色は `#ddd`（`@slidev/client/uno.config.ts`）。
+
+図は透過 PNG なので背景に追従できない。テーマを切り替えるなら、
+各スライドの `colorSchema` とこのファイルを必ずセットで変更すること。
+"""
+
+# Foreground colour for text, axes, ticks. スライド本文の文字色に合わせる。
+FG = "#dddddd"
 
 # Base colours — keep the tuple order stable so index-based access stays
 # consistent across figures and animations.
+# 括弧内は背景 (#121212) に対するコントラスト比。
 COLORS: tuple[str, ...] = (
-    "#4A90D9",  # blue  (brighter for dark bg)
-    "#FF5733",  # red   (slightly softened for dark bg)
-    "#00D95A",  # green (brighter for dark bg)
-    "#FFB347",  # orange (brighter for dark bg)
-    "#A87BC2",  # purple (brighter for dark bg)
-    "#999999",  # grey
-    "#cccccc",  # light grey
+    "#5BA3E8",  # blue   (7.0:1)
+    "#FF6B4A",  # red    (6.6:1)
+    "#3DDC84",  # green  (10.5:1)
+    "#FFB347",  # orange (10.5:1)
+    "#BE9BD6",  # purple (7.9:1)
+    "#A8A8A8",  # grey   (7.9:1)
+    "#CCCCCC",  # light grey (11.7:1) — 補助線・強調用
 )
 
 BLUE, RED, GREEN, ORANGE, PURPLE, GREY, LIGHT_GREY = COLORS

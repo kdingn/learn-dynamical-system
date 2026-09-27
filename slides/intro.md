@@ -1,5 +1,7 @@
 ---
 theme: default
+# 図は透過 PNG でテーマに追従できないため、既定の auto ではなく dark に固定する
+colorSchema: dark
 title: 力学系入門
 drawings:
   persist: false

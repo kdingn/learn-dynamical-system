@@ -7,53 +7,80 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 from learn_dynamical_system import style
-from learn_dynamical_system.palette import BLUE, FG, GREEN, GREY, ORANGE, RED
+from learn_dynamical_system.palette import (
+    BLUE, FG, GREEN, GREY, ORANGE, PURPLE, RED,
+)
+
+# スライド上での表示サイズ (CSS px)。図はこの寸法ちょうどで作られるので、
+# slides/01-basics.md 側の `width:` 指定をこの値と一致させること
+# （ずらすと拡大縮小がかかり、フォントが本文と合わなくなる）。
+SLOT_PHASE_PORTRAITS = (868, 340)
+SLOT_EIGENVALUE_PLANE = (830, 392)
+SLOT_PENDULUM = (770, 300)
+SLOT_VECTOR_FIELD = (440, 400)
+SLOT_LINEARIZATION = (770, 300)
+SLOT_EIGENVALUE_EFFECT = (680, 372)
 
 
 # ---------------------------------------------------------------------------
 # 1. Phase portraits for six types of 2D linear fixed points
 # ---------------------------------------------------------------------------
 
+#: 実固有値の3種類 / 複素固有値の3種類。パネルは正方形固定で大きさが
+#: 「行の高さ」だけで決まるため、2 段 (118px) ではなく 1 段 (214px) に分けて
+#: 2 枚のスライドに載せる。
+PHASE_PORTRAIT_GROUPS = {
+    "phase_portraits_real": [
+        (np.array([[-2.0, 0], [0, -1.0]]),
+         "Stable Node  $\\lambda = -2,\\, -1$"),
+        (np.array([[2.0, 0], [0, 1.0]]),
+         "Unstable Node  $\\lambda = 2,\\, 1$"),
+        (np.array([[1.0, 0], [0, -1.0]]),
+         "Saddle  $\\lambda = 1,\\, -1$"),
+    ],
+    "phase_portraits_complex": [
+        (np.array([[-0.3, -2], [2, -0.3]]),
+         "Stable Spiral  $\\lambda = -0.3 \\pm 2i$"),
+        (np.array([[0.3, -2], [2, 0.3]]),
+         "Unstable Spiral  $\\lambda = 0.3 \\pm 2i$"),
+        (np.array([[0.0, -2], [2, 0.0]]),
+         "Center  $\\lambda = \\pm 2i$"),
+    ],
+}
+
+
 def phase_portraits(output_dir: Path) -> None:
-    """Generate 2x3 grid of phase portraits for linear systems."""
+    """Generate 1x3 phase-portrait strips, one per eigenvalue family."""
     style.apply()
 
-    cases = [
-        (np.array([[-2.0, 0], [0, -1.0]]),
-         "Stable Node\n$\\lambda = -2,\\; -1$"),
-        (np.array([[2.0, 0], [0, 1.0]]),
-         "Unstable Node\n$\\lambda = 2,\\; 1$"),
-        (np.array([[1.0, 0], [0, -1.0]]),
-         "Saddle\n$\\lambda = 1,\\; -1$"),
-        (np.array([[-0.3, -2], [2, -0.3]]),
-         "Stable Spiral\n$\\lambda = -0.3 \\pm 2i$"),
-        (np.array([[0.3, -2], [2, 0.3]]),
-         "Unstable Spiral\n$\\lambda = 0.3 \\pm 2i$"),
-        (np.array([[0.0, -2], [2, 0.0]]),
-         "Center\n$\\lambda = \\pm 2i$"),
-    ]
+    for name, cases in PHASE_PORTRAIT_GROUPS.items():
+        fig, axes = plt.subplots(
+            1, len(cases), figsize=style.slot(*SLOT_PHASE_PORTRAITS))
 
-    fig, axes = plt.subplots(2, 3, figsize=(10, 7))
+        for ax, (A, title) in zip(axes, cases):
+            xx = np.linspace(-2.5, 2.5, 20)
+            yy = np.linspace(-2.5, 2.5, 20)
+            X, Y = np.meshgrid(xx, yy)
+            U = A[0, 0] * X + A[0, 1] * Y
+            V = A[1, 0] * X + A[1, 1] * Y
+            ax.streamplot(X, Y, U, V, color=BLUE, linewidth=0.7,
+                          density=1.3, arrowsize=0.9)
+            ax.plot(0, 0, "o", color=RED, markersize=6, zorder=5)
+            ax.set_xlim(-2.5, 2.5)
+            ax.set_ylim(-2.5, 2.5)
+            ax.set_aspect("equal")
+            ax.set_title(title, fontsize=style.SMALL_FONT_PT)
+            ax.set_xticks([-2, 0, 2])
+            ax.set_yticks([-2, 0, 2])
+            ax.set_xlabel(r"$q_1$")
 
-    for ax, (A, title) in zip(axes.flat, cases):
-        xx = np.linspace(-2.5, 2.5, 20)
-        yy = np.linspace(-2.5, 2.5, 20)
-        X, Y = np.meshgrid(xx, yy)
-        U = A[0, 0] * X + A[0, 1] * Y
-        V = A[1, 0] * X + A[1, 1] * Y
-        ax.streamplot(X, Y, U, V, color=BLUE, linewidth=0.6,
-                      density=1.2, arrowsize=0.8)
-        ax.plot(0, 0, "o", color=RED, markersize=5, zorder=5)
-        ax.set_xlim(-2.5, 2.5)
-        ax.set_ylim(-2.5, 2.5)
-        ax.set_aspect("equal")
-        ax.set_title(title, fontsize=10)
-        ax.set_xlabel(r"$x_1$", fontsize=10)
-        ax.set_ylabel(r"$x_2$", fontsize=10)
+        # 3 枚とも同じ縦軸なので、ラベルは左端だけに出す
+        for ax in axes[1:]:
+            ax.set_yticklabels([])
+        axes[0].set_ylabel(r"$q_2$")
 
-    fig.tight_layout()
-    fig.savefig(output_dir / "phase_portraits.png")
-    plt.close(fig)
+        fig.savefig(output_dir / f"{name}.png")
+        plt.close(fig)
 
 
 # ---------------------------------------------------------------------------
@@ -64,11 +91,12 @@ def eigenvalue_plane(output_dir: Path) -> None:
     """Classification of 2D fixed points by eigenvalue location."""
     style.apply()
 
-    fig, ax = plt.subplots(figsize=(7, 5.5))
+    fig, ax = plt.subplots(figsize=style.slot(*SLOT_EIGENVALUE_PLANE))
 
     # Background shading: stable (left) / unstable (right)
-    ax.axvspan(-3.5, 0, alpha=0.12, color=BLUE)
-    ax.axvspan(0, 3.5, alpha=0.12, color=RED)
+    # xlim いっぱいまで塗る（半平面を表すので途中で切れていると意図が伝わらない）
+    ax.axvspan(-3.9, 0, alpha=0.12, color=BLUE)
+    ax.axvspan(0, 3.9, alpha=0.12, color=RED)
 
     # Coordinate arrows
     ax.annotate("", xy=(3.3, 0), xytext=(-3.3, 0),
@@ -77,10 +105,10 @@ def eigenvalue_plane(output_dir: Path) -> None:
                 arrowprops=dict(arrowstyle="->", color=FG, lw=0.8))
     ax.axvline(0, color=FG, linewidth=0.8, linestyle="--", alpha=0.3)
 
-    ax.text(3.4, -0.25, r"$\mathrm{Re}(\lambda)$", fontsize=12)
-    ax.text(0.15, 3.15, r"$\mathrm{Im}(\lambda)$", fontsize=12)
+    ax.text(3.4, -0.25, r"$\mathrm{Re}(\lambda)$")
+    ax.text(0.15, 3.15, r"$\mathrm{Im}(\lambda)$")
 
-    fs = 10
+    fs = style.SMALL_FONT_PT
 
     # --- Stable node ---
     ax.plot([-2.5, -1.2], [0, 0], "o", color=BLUE, ms=6, zorder=5)
@@ -107,7 +135,8 @@ def eigenvalue_plane(output_dir: Path) -> None:
     # --- Center ---
     ax.plot(0, 2.5, "s", color=GREEN, ms=5, zorder=5)
     ax.plot(0, -2.5, "s", color=GREEN, ms=5, zorder=5)
-    ax.text(0.9, 2.6, "Center", fontsize=fs, ha="left",
+    # 虚軸上の点なので、ラベルは軸の左に寄せて "Unstable Spiral" から離す
+    ax.text(-0.3, 2.5, "Center", fontsize=fs, ha="right", va="center",
             color=GREEN, weight="bold")
 
     # --- Saddle ---
@@ -118,24 +147,26 @@ def eigenvalue_plane(output_dir: Path) -> None:
                 arrowprops=dict(arrowstyle="->", color=ORANGE, lw=0.8))
     ax.annotate("", xy=(-2.0, 0), xytext=(-1.5, -1.0),
                 arrowprops=dict(arrowstyle="->", color=ORANGE, lw=0.8))
-    ax.text(0.5, -1.0, r"$\lambda_1 > 0 > \lambda_2$",
-            fontsize=9, ha="center", color=ORANGE)
+    # 虚軸に重ならないよう "Saddle" の真下に置く
+    ax.text(2.5, -1.7, r"$\lambda_1 > 0 > \lambda_2$",
+            fontsize=fs, ha="center", color=ORANGE)
 
     # Watermark-style stability labels
-    ax.text(-2.8, -2.8, "Stable", fontsize=16, ha="center",
-            color=BLUE, alpha=0.25, weight="bold")
-    ax.text(2.8, -2.8, "Unstable", fontsize=16, ha="center",
-            color=RED, alpha=0.25, weight="bold")
+    ax.text(-2.8, -2.8, "Stable", fontsize=style.BASE_FONT_PT * 1.2, ha="center",
+            color=BLUE, alpha=0.45, weight="bold")
+    ax.text(2.8, -2.8, "Unstable", fontsize=style.BASE_FONT_PT * 1.2, ha="center",
+            color=RED, alpha=0.45, weight="bold")
 
-    ax.set_xlim(-3.5, 3.5)
-    ax.set_ylim(-3.5, 3.5)
-    ax.set_aspect("equal")
+    ax.set_xlim(-3.9, 3.9)
+    ax.set_ylim(-3.3, 3.5)
+    # ラベル付きの模式図であり、等方性に依存した主張はしていない。
+    # set_aspect("equal") を掛けると正方形の軸が強制され、横長のスロットの
+    # 左右に大きな内部余白ができてしまうので掛けない。
     for spine in ax.spines.values():
         spine.set_visible(False)
     ax.set_xticks([])
     ax.set_yticks([])
 
-    fig.tight_layout()
     fig.savefig(output_dir / "eigenvalue_plane.png")
     plt.close(fig)
 
@@ -148,7 +179,7 @@ def pendulum_phase_portrait(output_dir: Path) -> None:
     """Phase portrait for the simple pendulum dx/dt=y, dy/dt=-sin(x)."""
     style.apply()
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=style.slot(*SLOT_PENDULUM))
     x_grid = np.linspace(-2 * np.pi, 2 * np.pi, 500)
 
     # Closed orbits (libration, H < 1)
@@ -196,9 +227,10 @@ def pendulum_phase_portrait(output_dir: Path) -> None:
         Line2D([0], [0], marker="s", color="none", markerfacecolor=RED,
                markeredgecolor=RED, ms=6, label="Saddle"),
     ]
-    ax.legend(handles=legend_elements, loc="upper right", fontsize=9)
+    # 枠色・背景色は style.apply() の rcParams（透過）に任せる
+    ax.legend(handles=legend_elements, loc="upper right",
+              fontsize=style.SMALL_FONT_PT, ncol=2)
 
-    fig.tight_layout()
     fig.savefig(output_dir / "pendulum_phase.png")
     plt.close(fig)
 
@@ -208,10 +240,10 @@ def pendulum_phase_portrait(output_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 def vector_field(output_dir: Path) -> None:
-    """Quiver plot of a 2D vector field: dx1=x2, dx2=x1-x1^3."""
+    """Quiver plot of a 2D vector field: dq1=q2, dq2=q1-q1^3."""
     style.apply()
 
-    fig, ax = plt.subplots(figsize=(6, 5))
+    fig, ax = plt.subplots(figsize=style.slot(*SLOT_VECTOR_FIELD))
     xx = np.linspace(-2.0, 2.0, 20)
     yy = np.linspace(-2.0, 2.0, 20)
     X, Y = np.meshgrid(xx, yy)
@@ -221,19 +253,19 @@ def vector_field(output_dir: Path) -> None:
     speed[speed == 0] = 1.0  # avoid division by zero
 
     ax.quiver(X, Y, U / speed, V / speed, speed,
-              cmap="coolwarm", alpha=0.8, scale=25, width=0.004)
+              cmap=style.sequential_cmap(BLUE, PURPLE, RED),
+              scale=25, width=0.006)
     # Mark fixed points: (0,0), (1,0), (-1,0)
     for xf in [-1.0, 0.0, 1.0]:
         ax.plot(xf, 0, "o", color=RED, markersize=7, zorder=5)
     ax.set_xlim(-2.0, 2.0)
     ax.set_ylim(-2.0, 2.0)
     ax.set_aspect("equal")
-    ax.set_xlabel(r"$x_1$")
-    ax.set_ylabel(r"$x_2$")
-    ax.set_title(r"Vector field: $\dot{x}_1 = x_2,\;\; \dot{x}_2 = x_1 - x_1^3$",
-                 fontsize=12)
+    ax.set_xlabel(r"$q_1$")
+    ax.set_ylabel(r"$q_2$")
+    ax.set_xticks([-2, -1, 0, 1, 2])
+    ax.set_yticks([-2, -1, 0, 1, 2])
 
-    fig.tight_layout()
     fig.savefig(output_dir / "vector_field.png")
     plt.close(fig)
 
@@ -246,7 +278,7 @@ def linearization(output_dir: Path) -> None:
     """Side-by-side streamplots: nonlinear pendulum vs its linearization."""
     style.apply()
 
-    fig, axes = plt.subplots(1, 2, figsize=(10, 4.5))
+    fig, axes = plt.subplots(1, 2, figsize=style.slot(*SLOT_LINEARIZATION))
     xx = np.linspace(-2, 2, 25)
     yy = np.linspace(-2, 2, 25)
     X, Y = np.meshgrid(xx, yy)
@@ -277,7 +309,6 @@ def linearization(output_dir: Path) -> None:
     axes[1].set_ylim(-2, 2)
     axes[1].set_aspect("equal")
 
-    fig.tight_layout()
     fig.savefig(output_dir / "linearization.png")
     plt.close(fig)
 
@@ -298,7 +329,7 @@ def eigenvalue_effect(output_dir: Path) -> None:
         (0.0, 5.0, r"$\sigma = 0,\; \omega \neq 0$" + "\nPure oscillation"),
     ]
 
-    fig, axes = plt.subplots(2, 2, figsize=(8, 6))
+    fig, axes = plt.subplots(2, 2, figsize=style.slot(*SLOT_EIGENVALUE_EFFECT))
     for ax, (sigma, omega, label) in zip(axes.flat, cases):
         y = np.exp(sigma * t) * np.cos(omega * t)
         ax.plot(t, y, color=BLUE, linewidth=1.2)
@@ -308,12 +339,14 @@ def eigenvalue_effect(output_dir: Path) -> None:
             ax.plot(t, envelope, "--", color=RED, linewidth=0.8, alpha=0.7)
             ax.plot(t, -envelope, "--", color=RED, linewidth=0.8, alpha=0.7)
         ax.axhline(0, color=GREY, linewidth=0.5, alpha=0.5)
-        ax.set_title(label, fontsize=10)
-        ax.set_xlabel(r"$t$")
-        ax.set_ylabel(r"$e^{\lambda t}$")
+        ax.set_title(label, fontsize=style.SMALL_FONT_PT)
         ax.set_xlim(0, 6)
 
-    fig.tight_layout()
+    for ax in axes[-1, :]:
+        ax.set_xlabel(r"$t$")
+    for ax in axes[:, 0]:
+        ax.set_ylabel(r"$e^{\lambda t}$")
+
     fig.savefig(output_dir / "eigenvalue_effect.png")
     plt.close(fig)
 
