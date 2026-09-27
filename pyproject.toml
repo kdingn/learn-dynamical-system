@@ -29,6 +29,7 @@ figures = { chain = ["figures:images", "figures:animations"] }
 "figures:images" = "python -m learn_dynamical_system.figures"
 "figures:animations" = "python -m learn_dynamical_system.animations"
 check-slides = "python scripts/check_slides.py"
+check-terms = "python scripts/check_terms.py"
 
 [tool.hatch.metadata]
 allow-direct-references = true
