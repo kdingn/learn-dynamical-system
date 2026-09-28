@@ -4,6 +4,7 @@
 
 * 内容がスライド枠からはみ出していないか（パディング帯にインクが侵入していないか）
 * 不自然な余白が残っていないか（内容領域に対する占有率が低すぎないか）
+* 図を等倍で貼っているか（md の `width:` と PNG の画素幅が対応しているか）
 
 を機械的に判定する。目視確認の前段として使い、ここを通ってから実際に画像を見る。
 
@@ -14,6 +15,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 import tempfile
@@ -171,6 +173,36 @@ def export_slides(entry: Path, out_dir: Path) -> list[Path]:
     return sorted(out_dir.glob("*.png"), key=lambda p: int(p.stem))
 
 
+#: `<img src="/figures/xxx.png" ... width: NNNpx ...>` を拾う
+IMG_RE = re.compile(
+    r'<img[^>]*src="/figures/([\w-]+\.png)"[^>]*?width:\s*(\d+)px', re.S)
+
+
+def check_image_scale(entry: Path) -> list[str]:
+    """図を等倍で貼っているかを確認する.
+
+    図は `savefig.dpi = 192`（= 96 CSS px の2倍）で書き出しているので、
+    PNG の画素幅の半分が「スライド上で占めるべき CSS px」になる。md 側の
+    `width:` がこれとずれていると拡大縮小がかかり、図中の文字が本文と
+    違う大きさになる（SLOT_* の値と md を手で揃えるのは間違えやすい）。
+    """
+    public = entry.resolve().parents[1] / "public" / "figures"
+    problems: list[str] = []
+    for name, width in IMG_RE.findall(entry.read_text(encoding="utf-8")):
+        png = public / name
+        if not png.exists():
+            problems.append(f"{name}: PNG がない（rye run figures を先に実行）")
+            continue
+        with Image.open(png) as im:
+            expected = im.width / 2
+        if abs(expected - int(width)) > 0.5:
+            problems.append(
+                f"{name}: md は {width}px だが PNG は {expected:.0f}px 相当"
+                f" — 図が {int(width) / expected:.3f} 倍に拡大縮小される"
+            )
+    return problems
+
+
 def main() -> int:
     # Windows の既定は cp932 で、本スクリプトの出力（— や日本語）が落ちる
     for stream in (sys.stdout, sys.stderr):
@@ -220,6 +252,14 @@ def main() -> int:
             else:
                 status, detail = "OK  ", f"占有 {r.fill_ratio:5.0%}"
             print(f"  [{status:5}] p{r.index:>2}  {detail}")
+
+        scale_problems = check_image_scale(args.entry)
+        if scale_problems:
+            print()
+            print("  図の等倍表示（SLOT と md の width）に不一致:")
+            for msg in scale_problems:
+                print(f"    - {msg}")
+            bad += len(scale_problems)
 
         print()
         if bad:
