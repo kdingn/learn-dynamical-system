@@ -224,34 +224,32 @@ $$
 W^s_{\mathrm{loc}}(\boldsymbol{q}^*) = \bigl\{\, \boldsymbol{q} \in U \;\bigm|\; \phi_t(\boldsymbol{q}) \to \boldsymbol{q}^*\ (t \to \infty),\ \ \phi_t(\boldsymbol{q}) \in U\ \ \forall\, t \geq 0 \,\bigr\}
 $$
 
-**定理** (Hadamard 1901, Perron 1928): $\boldsymbol{f}$ が $C^r$ ($r \geq 1$) で $\boldsymbol{q}^*$ が**双曲型**ならば、$U$ を十分小さく取ると
+<div class="mt-3 px-5 py-1 border-l-4 border-teal-400 bg-white bg-opacity-5">
 
-| 問い | 答え |
-|---|---|
-| 形 | $W^s_{\mathrm{loc}}$ は $C^r$ 級の多様体 |
-| 次元 | $\dim W^s_{\mathrm{loc}} = \dim E^s$ |
-| 向き | $T_{\boldsymbol{q}^*}W^s_{\mathrm{loc}} = E^s$（$\boldsymbol{q}^*$ で $E^s$ に接する） |
+**定理** (Hadamard 1901, Perron 1928): $\boldsymbol{f}$ が $C^r$ ($r \geq 1$) で $\boldsymbol{q}^*$ が**双曲型**ならば、$U$ を十分小さく取ると、$W^s_{\mathrm{loc}}$ は $C^r$ 級の多様体で（**形**）、$\dim W^s_{\mathrm{loc}} = \dim E^s$（**次元**）、$T_{\boldsymbol{q}^*}W^s_{\mathrm{loc}} = E^s$、すなわち $\boldsymbol{q}^*$ で $E^s$ に接する（**向き**）。$W^u_{\mathrm{loc}}$ も同様。
 
-$W^u_{\mathrm{loc}}$ も同様。多様体であることが保証されたので、以下 $W^s, W^u$ を**安定多様体・不安定多様体**と呼ぶ。
+</div>
+
+多様体であることが保証されたので、以下 $W^s, W^u$ を**安定多様体・不安定多様体**と呼ぶ。
 
 ---
 
 ## 双曲型という仮定の役割
 
-定理は $\boldsymbol{q}^*$ が**双曲型**、つまり**どの方向にも $0$ でない伸び縮みの率がある**ことを仮定している。この仮定が要る理由を見るため、ずれ $\boldsymbol{\xi} = \boldsymbol{q} - \boldsymbol{q}^*$ で書く:
+定理は $\boldsymbol{q}^*$ が**双曲型**、つまり**どの方向の成長率（固有値の実部）も $0$ でない**ことを仮定している。この仮定が要る理由を見るため、ずれ $\boldsymbol{\xi} = \boldsymbol{q} - \boldsymbol{q}^*$ で書く:
 
 $$
 \dot{\boldsymbol{\xi}} = J\boldsymbol{\xi} + \boldsymbol{N}(\boldsymbol{\xi}), \qquad |\boldsymbol{N}(\boldsymbol{\xi})| \leq \varepsilon\,|\boldsymbol{\xi}| \quad (|\boldsymbol{\xi}| < \delta)
 $$
 
-$\boldsymbol{N}$ は2次以上なので、近傍を小さくする（$\delta \to 0$）ほど $\varepsilon$ も小さくでき、非線形項が伸び縮みの率を変える量は高々 $\varepsilon$ 程度になる。双曲型なら $\mathbb{R}^n = E^s \oplus E^u$ で、線形部の率は固有値の実部で決まる:
+$\boldsymbol{N}$ は2次以上なので、近傍を小さくする（$\delta \to 0$）ほど $\varepsilon$ も小さくでき、非線形項が成長率を変える量は高々 $\varepsilon$ 程度になる。双曲型なら $\mathbb{R}^n = E^s \oplus E^u$ で、線形部の成長率は固有値の実部そのものである:
 
-- **$E^s$ 方向**: 縮む率 $a = \min_{\mathrm{Re}\,\lambda_k < 0} (-\mathrm{Re}\,\lambda_k) > 0$。$\varepsilon < a$ なら非線形項があっても縮む
-- **$E^u$ 方向**: 伸びる率 $b = \min_{\mathrm{Re}\,\lambda_k > 0} \mathrm{Re}\,\lambda_k > 0$。$\varepsilon < b$ なら伸びる
+- **$E^s$ 方向**: 減衰率 $a = \min_{\mathrm{Re}\,\lambda_k < 0} (-\mathrm{Re}\,\lambda_k) > 0$。$\varepsilon < a$ なら非線形項があっても縮む
+- **$E^u$ 方向**: 成長率 $b = \min_{\mathrm{Re}\,\lambda_k > 0} \mathrm{Re}\,\lambda_k > 0$。$\varepsilon < b$ なら伸びる
 
 近傍を小さくして $\varepsilon < a, b$ にすれば、縮む方向と伸びる方向の区別が保たれ、$W^s$ は $E^s$ を少し曲げた形で残る（厳密には Lyapunov-Perron 法で構成する）。
 
-**双曲型でない場合**は $E^c \neq \{\boldsymbol{0}\}$ で、その方向の率は $0$ である。どんなに小さい $\varepsilon$ でも縮むか伸びるかは非線形項で決まり、この議論が使えない。これが後半の中心多様体の問題である。
+**双曲型でない場合**は $E^c \neq \{\boldsymbol{0}\}$ で、その方向の成長率は $0$ である。どんなに小さい $\varepsilon$ でも縮むか伸びるかは非線形項で決まり、この議論が使えない。この場合を扱うのが中心多様体である。
 
 ---
 
@@ -318,37 +316,52 @@ $\boldsymbol{N}$ は2次以上なので、近傍を小さくする（$\delta \to
 
 ## 非双曲型の固定点
 
-$E^c \neq \{\boldsymbol{0}\}$ の場合。座標を $E^c$ 方向 $\boldsymbol{x}$ と双曲方向 $\boldsymbol{y}$ に分けて書き直すと
+$E^c \neq \{\boldsymbol{0}\}$ の場合。固定点からのずれ $\boldsymbol{\xi}$ を $E^c$ 方向 $\boldsymbol{x}$ と双曲方向 $\boldsymbol{y}$ に分けて書き直すと
 
 $$
 \begin{cases}
-\dot{\boldsymbol{x}} = A\boldsymbol{x} + \boldsymbol{f}(\boldsymbol{x}, \boldsymbol{y}), & \boldsymbol{x} \in \mathbb{R}^{c}, \quad A \text{ の固有値は } \mathrm{Re}(\lambda) = 0 \\[2pt]
-\dot{\boldsymbol{y}} = B\boldsymbol{y} + \boldsymbol{g}(\boldsymbol{x}, \boldsymbol{y}), & \boldsymbol{y} \in \mathbb{R}^{s}, \quad B \text{ の固有値は } \mathrm{Re}(\lambda) < 0
+\dot{\boldsymbol{x}} = A\boldsymbol{x} + \boldsymbol{N}_c(\boldsymbol{x}, \boldsymbol{y}), & \boldsymbol{x} \in \mathbb{R}^{c}, \quad A \text{ の固有値は } \mathrm{Re}(\lambda) = 0 \\[2pt]
+\dot{\boldsymbol{y}} = B\boldsymbol{y} + \boldsymbol{N}_s(\boldsymbol{x}, \boldsymbol{y}), & \boldsymbol{y} \in \mathbb{R}^{s}, \quad B \text{ の固有値は } \mathrm{Re}(\lambda) < 0
 \end{cases}
 $$
 
-ここで $\boldsymbol{f}, \boldsymbol{g}$ は2次以上（$\boldsymbol{f}(\boldsymbol{0},\boldsymbol{0}) = \boldsymbol{0}$, $D\boldsymbol{f}(\boldsymbol{0},\boldsymbol{0}) = 0$、$\boldsymbol{g}$ も同様）。
+ここで $\boldsymbol{N}_c, \boldsymbol{N}_s$ は非線形項で2次以上（$\boldsymbol{N}_c(\boldsymbol{0},\boldsymbol{0}) = \boldsymbol{0}$, $D\boldsymbol{N}_c(\boldsymbol{0},\boldsymbol{0}) = 0$、$\boldsymbol{N}_s$ も同様）。
 
 **$E^u$ は除いてよい**: $E^u \neq \{\boldsymbol{0}\}$ なら $W^u$ に沿って離れる軌道が存在するので、不安定である。安定性が問題になるのは $\mathbb{R}^n = E^s \oplus E^c$ の場合だけである。
 
-$\boldsymbol{y}$ 方向は指数的に減衰するので、$\boldsymbol{x}$ の方程式だけを調べればよいと考えられる。ただし **$\boldsymbol{y} = \boldsymbol{0}$ と置いて $\boldsymbol{y}$ を消すことはできない**。$\boldsymbol{y} = \boldsymbol{0}$ の上でも $\dot{\boldsymbol{y}} = \boldsymbol{g}(\boldsymbol{x}, \boldsymbol{0}) \neq \boldsymbol{0}$ となりうるので、$E^c$ は**不変ではない**。$\boldsymbol{y}$ の正しい消し方を与えるのが中心多様体定理である。
+知りたいのは、線形化で決まらない原点の安定性である。$\boldsymbol{y}$ 方向は指数的に減衰するので、それは $\boldsymbol{x}$ の振る舞いで決まるはずで、$\boldsymbol{x}$ だけの方程式にして調べたい。ただし **$\boldsymbol{y} = \boldsymbol{0}$ と置くことはできない**。$\boldsymbol{y} = \boldsymbol{0}$（$E^c$）の上でも $\dot{\boldsymbol{y}} = \boldsymbol{N}_s(\boldsymbol{x}, \boldsymbol{0}) \neq \boldsymbol{0}$ となりうるので、$E^c$ は**不変ではない**。
+
+$\boldsymbol{x}$ だけの方程式にするには、$E^c$ の代わりに、**$\boldsymbol{y}$ が $\boldsymbol{x}$ で決まる不変な曲面** $\boldsymbol{y} = \boldsymbol{h}(\boldsymbol{x})$ が必要になる（不変なので、その上から出発した軌道に $\boldsymbol{y} = \boldsymbol{h}(\boldsymbol{x})$ を代入し続けてよい）。これが $E^c$ に対応する不変多様体 $W^c$ で、$E^s, E^u$ に $W^s, W^u$ が対応したのと同じ関係にある。
+
+---
+
+## $W^s, W^u$ と $W^c$ の違い
+
+$W^s, W^u$ は「$t \to \pm\infty$ で $\boldsymbol{q}^*$ に収束する点の集合」として先に定義でき、示すべきはその形だけだった。$E^c$ の方向は成長率が $0$ で収束も発散もしないため、$W^c$ は同じようには定義できず、**存在から**示す必要がある。それが中心多様体定理である。
+
+| | $W^s, W^u$ | $W^c$ |
+|---|---|---|
+| 定義 | 収束する点の集合として先に決まる | 収束では定義できない |
+| 主張 | その集合は $E^s, E^u$ に接する多様体 | $E^c$ に接する局所不変な多様体が存在する |
+| 一意性 | 一意 | 一意とは限らない |
+| 役割 | 相空間を仕切る（セパラトリクス・接続軌道） | 線形化で決まらない安定性を低次元で判定する |
 
 ---
 
 ## 中心多様体定理
 
+<div class="mt-3 px-5 py-1 border-l-4 border-teal-400 bg-white bg-opacity-5">
+
+**定理** (Pliss 1964, Kelley 1967): $\boldsymbol{N}_c, \boldsymbol{N}_s$ が $C^r$ ($r \geq 2$) ならば、原点の近傍に、グラフ $\boldsymbol{y} = \boldsymbol{h}(\boldsymbol{x})$（$\boldsymbol{h}(\boldsymbol{0}) = \boldsymbol{0}$, $D\boldsymbol{h}(\boldsymbol{0}) = 0$）で表される $C^r$ 級の**中心多様体** $W^c$ が存在する。$W^c$ は局所不変（軌道は近傍の中にいる間 $W^c$ 上に留まる）で、$\dim W^c = \dim E^c$、原点で $E^c$ に接する。
+
+</div>
+
 <div class="grid grid-cols-[1fr_400px] gap-8 items-center">
 <div>
 
-**定理** (Pliss 1964, Kelley 1967): $\boldsymbol{x}, \boldsymbol{y}$ に分けた系で $\boldsymbol{f}, \boldsymbol{g}$ が $C^r$ ($r \geq 2$) ならば、原点の近傍に
+右図の橙は速く縮む $\boldsymbol{y}$ 方向、緑は $W^c$ に沿った遅い運動である。
 
-$$\boldsymbol{y} = \boldsymbol{h}(\boldsymbol{x}), \qquad \boldsymbol{h}(\boldsymbol{0}) = \boldsymbol{0}, \quad D\boldsymbol{h}(\boldsymbol{0}) = 0$$
-
-のグラフとして表される $C^r$ 級の**中心多様体** $W^c$ が存在し、局所不変である。$\dim W^c = \dim E^c$ で、原点で $E^c$ に**接する**。
-
-$\boldsymbol{h}(\boldsymbol{0}) = \boldsymbol{0}$ が「原点を通る」、$D\boldsymbol{h}(\boldsymbol{0}) = 0$ が「$E^c$ に接する」に対応する。
-
-**局所不変**とは、軌道が $|\boldsymbol{x}| < \delta$ にいる間は $W^c$ 上に留まるという意味（外へ出た先は保証しない）。
+$W^c$ は $E^c$ の非線形版で、その上の軌道が**どこを通るか**を決める。**どちら向きに動くか**（原点に近づくか離れるか）は決めておらず、$W^c$ 上の運動（$\boldsymbol{y} = \boldsymbol{h}(\boldsymbol{x})$ を代入した $\boldsymbol{x}$ の方程式）を調べて判定する（$\dot{x} = -x^3$ なら近づき、$\dot{x} = +x^3$ なら離れる。どちらでも $W^c$ は存在する）。
 
 </div>
 <img src="/figures/center_manifold.png" style="width: 400px" />
@@ -356,17 +369,35 @@ $\boldsymbol{h}(\boldsymbol{0}) = \boldsymbol{0}$ が「原点を通る」、$D\
 
 ---
 
+## $\boldsymbol{y}$ が $\boldsymbol{x}$ の関数になる理由
+
+いちばん単純な $\dot{y} = -y + g(x)$（$x$ はゆっくり動く）で考える。
+
+1. **$x$ を止めると**: $y$ は $g(x)$ へ指数的に引き寄せられ、$y \approx g(x)$ に落ち着く
+2. **$x$ がゆっくり動くと**: 行き先 $g(x)$ も動くが、$y$ はすぐ追いつくので、いつ見ても $y \approx g(x)$ になる
+3. **式で見ると**: 解は $\;y(t) = e^{-t}\,y(0) + \int_0^t e^{-(t-\tau)}\, g\bigl(x(\tau)\bigr)\, d\tau$。初期値の項は消え、積分で効くのは直近の $x$ だけになる。$x$ はゆっくり動くので直近の履歴は今の $x$ で決まり、$y = h(x)$ と書ける
+
+**$y$ の緩和が速いことが要る**。遅ければ $y$ は初期値や長い過去の $x$ を覚えていて、同じ $x$ でも $y$ が異なる。中心多様体は、この「$x$ を止めて $y$ を落ち着かせる」近似を、$x$ が動く分の補正まで含めて正確にしたものである（例えば $\dot{y} = -y - x^2$ なら主要項は $y \approx -x^2$）。
+
+$y$ が $W^c$ に追いつく過程と、追いついた後の $W^c$ 上の $x$ の運動を合わせて述べたのが、縮約原理である。
+
+---
+
 ## 縮約原理
 
-**定理** (Shoshitaishvili 1975): $B$ の固有値が全て $\mathrm{Re}(\lambda) < 0$ のとき、原点の近傍で元の系は $\dot{\boldsymbol{x}} = A\boldsymbol{x} + \boldsymbol{f}(\boldsymbol{x}, \boldsymbol{h}(\boldsymbol{x}))$ と $\dot{\boldsymbol{y}} = -\boldsymbol{y}$ の**直積に位相的に同値**である。左が $W^c$ 上へ制限した**縮約系**、右は双曲方向の指数減衰を表す。
+$W^c$ 上では $\boldsymbol{y} = \boldsymbol{h}(\boldsymbol{x})$ なので、代入すると $\boldsymbol{x}$ だけの方程式が閉じる。これを**縮約系**と呼ぶ:
 
-したがって、**原点の安定性は縮約系の安定性と一致する**。Hartman-Grobman の定理は「双曲型なら**線形系**に帰着する」と述べ、縮約原理は「非双曲型なら**低次元の非線形系**に帰着する」と述べている。
+$$\dot{\boldsymbol{x}} = A\boldsymbol{x} + \boldsymbol{N}_c\bigl(\boldsymbol{x}, \boldsymbol{h}(\boldsymbol{x})\bigr) \qquad (c = \dim E^c \text{ 次元})$$
 
-| | 縮約前 | 縮約後 |
-|---|---|---|
-| 次元 | $n = c + s$ | $c = \dim E^c$ |
-| 線形部の固有値 | $\mathrm{Re}(\lambda) = 0$ と $\mathrm{Re}(\lambda) < 0$ が混在 | $\mathrm{Re}(\lambda) = 0$ のみ |
-| 安定性 | 線形化では判定できない | 非線形項が決める |
+<div class="mt-3 mb-5 px-5 py-1 border-l-4 border-teal-400 bg-white bg-opacity-5">
+
+**定理** (Pliss 1964, Shoshitaishvili 1972): $E^u = \{\boldsymbol{0}\}$ のとき、原点の近傍で元の系は、縮約系と $\dot{\boldsymbol{y}} = -\boldsymbol{y}$ を並べた系と**位相的に同値**である。特に、原点の安定性は縮約系の安定性と一致する。
+
+</div>
+
+- $W^c$ へ指数的に近づく運動が $\dot{\boldsymbol{y}} = -\boldsymbol{y}$、$W^c$ に沿う運動が縮約系にあたる（$-1$ という値自体に意味はない）
+- **位相的** (topological) **に同値**: 連続で逆も連続な1対1の写像で、一方の軌道を他方の軌道へ向きを保って移せること（Hartman-Grobman の定理と同じ意味）。収束か発散かは保たれるが、速さや渦を巻くかどうかは保たれない
+- $W^c$ の外の軌道では $\boldsymbol{y} \neq \boldsymbol{h}(\boldsymbol{x})$ なので、代入しても縮約系にはならない。それでも安定性が縮約系で決まるのは、$\boldsymbol{y}$ と $\boldsymbol{h}(\boldsymbol{x})$ のずれが指数的に消え、その軌道が $W^c$ 上のある軌道に追従するからで、これは不等式による評価で示す
 
 ---
 
@@ -426,47 +457,54 @@ $$\dot{x} = x^2, \qquad \dot{y} = -y \qquad (\lambda = 0,\, -1)$$
 
 ---
 
-## 正規形
+## 正規形の考え方
 
-縮約系にはまだ非線形項が残っている。座標変換によって、これをできるだけ少ない項にするのが正規形理論である。$\dot{\boldsymbol{x}} = J\boldsymbol{x} + \sum_{k \geq 2} \boldsymbol{F}_k(\boldsymbol{x})$（$\boldsymbol{F}_k$ は $k$ 次の同次項）に、恒等写像に近い変換 $\boldsymbol{x} = \boldsymbol{y} + \boldsymbol{h}_k(\boldsymbol{y})$ を施すと
+縮約系 $\dot{\boldsymbol{x}} = A\boldsymbol{x} + (\text{2次以上の項})$ には、一般に多くの非線形項がある。原点の近くで座標を少しだけ取り替えても（恒等写像に近い変換）軌道の形は変わらないが、項の係数は変わり、消せる項がある。**消せる項を全部消した形**を正規形と呼び、安定性は残った項だけで決まる。
+
+1次元の $\dot{x} = \lambda x + \alpha x^2$ で、新しい座標 $u$ を $x = u + \beta u^2$ と取る。両辺をそれぞれ $u$ で書くと
 
 $$
-\dot{\boldsymbol{y}} = J\boldsymbol{y} + \boldsymbol{F}_k(\boldsymbol{y}) - L_J\boldsymbol{h}_k(\boldsymbol{y}) + O(|\boldsymbol{y}|^{k+1}),
-\qquad L_J \boldsymbol{h} := D\boldsymbol{h}(\boldsymbol{y})\,J\boldsymbol{y} - J\boldsymbol{h}(\boldsymbol{y})
+\dot{x} = (1 + 2\beta u)\,\dot{u}, \qquad \lambda x + \alpha x^2 = \lambda u + (\lambda \beta + \alpha)\, u^2 + O(u^3)
 $$
 
-<img src="/figures/normal_form.png" class="mx-auto" style="width: 740px" />
+$$
+\Longrightarrow\quad \dot{u} = \frac{\lambda u + (\lambda \beta + \alpha)\, u^2}{1 + 2\beta u} + O(u^3) = \lambda u + (\alpha - \lambda \beta)\, u^2 + O(u^3)
+$$
 
-$L_J$（**ホモロジー作用素**）は $k$ 次の同次ベクトル場の空間 $H_k$ 上の線形写像。$\boldsymbol{F}_k \in \mathrm{Im}\,L_J$ ならば、$\boldsymbol{h}_k$ を選んで $k$ 次の項を消せる。残るのは $\mathrm{Im}\,L_J$ の補空間にある成分だけである。
+- $\lambda \neq 0$ なら $\beta = \alpha/\lambda$ と選べば $u^2$ の項が消える
+- $\lambda = 0$（非双曲型）だと $u^2$ の係数は $\alpha$ のまま変わらず、どう選んでも消せない。この「消せない」場合を**共鳴**と呼ぶ
+
+**共鳴という名前**: 線形部だけなら $u \sim e^{\lambda t}$ なので、$u^2$ の項は $e^{2\lambda t}$ で変化する外力のように働く。その指数が $u$ 自身の $e^{\lambda t}$ と一致する（$2\lambda = \lambda$）と、固有振動数で揺らされた振動子と同じく応答が育ち、座標変換では吸収できない。
 
 ---
 
 ## 共鳴条件
 
-$J = \mathrm{diag}(\lambda_1, \dots, \lambda_n)$ と対角化できる場合、単項式のベクトル場 $\boldsymbol{y}^{\boldsymbol{m}}\boldsymbol{e}_i$（$\boldsymbol{y}^{\boldsymbol{m}} = y_1^{m_1}\cdots y_n^{m_n}$, $|\boldsymbol{m}| = k$）は $L_J$ の固有ベクトルになる:
+多変数でも計算は同じである。線形部が $A = \mathrm{diag}(\lambda_1, \dots, \lambda_n)$ のとき、第 $i$ 成分にある2次以上の単項式 $u_1^{m_1} \cdots u_n^{m_n}$ を、同じ形の項を足す変換で消そうとすると、その係数は次の量に $\beta$ を掛けた分だけ変わる:
 
 $$
-L_J\bigl(\boldsymbol{y}^{\boldsymbol{m}}\boldsymbol{e}_i\bigr)
-= \Bigl(\langle \boldsymbol{m}, \boldsymbol{\lambda}\rangle - \lambda_i\Bigr)\, \boldsymbol{y}^{\boldsymbol{m}}\boldsymbol{e}_i,
-\qquad \langle \boldsymbol{m}, \boldsymbol{\lambda}\rangle = \sum_j m_j \lambda_j
+\sum_j m_j \lambda_j - \lambda_i \qquad \bigl(\text{1次元の例では } m = 2 \text{ で } 2\lambda - \lambda = \lambda\bigr)
 $$
 
-固有値 $\langle \boldsymbol{m}, \boldsymbol{\lambda}\rangle - \lambda_i$ が $0$ でなければ、その単項式は座標変換で消せる。$0$ になる場合を**共鳴** (resonance) と呼ぶ:
+これが $0$ でなければ $\beta$ を選んで消せる。$0$ になる場合を**共鳴** (resonance) と呼ぶ:
 
 $$
 \lambda_i = \sum_j m_j \lambda_j, \qquad m_j \geq 0, \quad \sum_j m_j \geq 2
 $$
 
-- **共鳴がなければ、任意の有限次数までの非線形項を消して $\dot{\boldsymbol{y}} = J\boldsymbol{y}$ にできる**（Poincaré）。位相的な同値を与える Hartman-Grobman と違い、こちらは多項式の座標変換による線形化である
+- **共鳴がなければ、任意の有限次数までの非線形項を消して $\dot{\boldsymbol{u}} = A\boldsymbol{u}$ にできる**（Poincaré）
 - **$\mathrm{Re}(\lambda) = 0$ では共鳴が避けられない。** $\lambda = \pm i\omega$ なら $\lambda_1 = 2\lambda_1 + \lambda_2$（$2i\omega - i\omega = i\omega$）が常に成り立つ。そのため中心多様体上では、共鳴項が座標変換で消えずに残る
+- 共鳴は非双曲型に限らない（$\lambda_1 = 1, \lambda_2 = 2$ は双曲型だが $\lambda_2 = 2\lambda_1$ で共鳴）。ただし双曲型なら安定性は線形部で決まるので、残った共鳴項は結論に影響しない
 
 ---
 
 ## センターの正規形
 
-$\dim E^c = 2$, $\lambda = \pm i\omega$ の場合。2次の項は全て消え、3次で残る共鳴項は $|z|^2 z$ だけなので、複素座標 $z = y_1 + i y_2$ で正規形は
+$\dim E^c = 2$, $\lambda = \pm i\omega$ の場合。2次の項は全て消え、3次で残る共鳴項は $|z|^2 z$ だけなので、複素座標 $z = u_1 + i u_2$ で正規形は
 
 $$\dot{z} = i\omega z + c_1 |z|^2 z + O(|z|^5)$$
+
+$c_1$ は消えずに残った $|z|^2 z$ の項の係数で、元の系の2次と3次の係数で決まる（2次の項を消す変換が新たな3次の項を生むため）。
 
 極座標 $z = re^{i\theta}$ を代入し（$\dot{z} = (\dot{r} + i r\dot{\theta})e^{i\theta}$）、実部と虚部を比べると
 

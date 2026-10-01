@@ -4,7 +4,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.lines import Line2D
 
 from learn_dynamical_system import style
 from learn_dynamical_system.palette import (
@@ -209,22 +208,11 @@ def pendulum_phase_portrait(output_dir: Path) -> None:
     ax.set_xlim(-2 * np.pi, 2 * np.pi)
     ax.set_ylim(-4, 4)
     ax.set_xlabel(r"$\theta$")
-    ax.set_ylabel(r"$\dot{\theta}$")
+    ax.set_ylabel(r"$\omega$")
     ax.set_xticks([-2 * np.pi, -np.pi, 0, np.pi, 2 * np.pi])
     ax.set_xticklabels([r"$-2\pi$", r"$-\pi$", r"$0$", r"$\pi$", r"$2\pi$"])
 
-    legend_elements = [
-        Line2D([0], [0], color=BLUE, lw=1, label="Libration"),
-        Line2D([0], [0], color=RED, lw=1.5, label="Separatrix"),
-        Line2D([0], [0], color=GREY, lw=1, label="Rotation"),
-        Line2D([0], [0], marker="o", color="none", markerfacecolor=BLUE,
-               markeredgecolor=BLUE, ms=6, label="Center"),
-        Line2D([0], [0], marker="s", color="none", markerfacecolor=RED,
-               markeredgecolor=RED, ms=6, label="Saddle"),
-    ]
-    # 枠色・背景色は style.apply() の rcParams（透過）に任せる
-    ax.legend(handles=legend_elements, loc="upper right",
-              fontsize=style.SMALL_FONT_PT, ncol=2)
+    # 凡例は曲線に重なって読めないので置かない。色と記号の対応はスライド本文で示す
 
     fig.savefig(output_dir / "pendulum_phase.png")
     plt.close(fig)

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.patches import Polygon, Rectangle
+from matplotlib.patches import Polygon
 from scipy.integrate import solve_ivp
 
 from learn_dynamical_system import style
@@ -28,7 +28,6 @@ SLOT_CONNECTION_ENERGY = (800, 200)
 SLOT_CENTER_MANIFOLD = (400, 230)
 SLOT_CM_EXAMPLE = (780, 292)
 SLOT_CM_NONUNIQUE = (520, 220)
-SLOT_NORMAL_FORM = (740, 230)
 SLOT_PENDULUM_PERTURBATION = (560, 232)
 
 
@@ -150,7 +149,7 @@ def chapter_overview(output_dir: Path) -> None:
     ax.text(cx - 3.2, cy + 2.0, "fast", color=ORANGE, fontsize=fs,
             ha="left", va="center")
     ax.text(cx, 1.9, "Reduction on $W^c$", ha="center", fontsize=fs, color=FG)
-    ax.text(cx, 0.55, r"$\dot{x} = Ax + f(x, h(x))$", ha="center",
+    ax.text(cx, 0.55, r"$\dot{x} = Ax + N_c(x, h(x))$", ha="center",
             fontsize=fs, color=GREY)
 
     # --- ステージ間の矢印 ---
@@ -1058,58 +1057,6 @@ def center_manifold_nonuniqueness(output_dir: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 10. Normal form: what a coordinate change can and cannot remove
-# ---------------------------------------------------------------------------
-
-def normal_form(output_dir: Path) -> None:
-    """k 次の項の空間が Im L_J と共鳴項に分かれる、という模式図."""
-    style.apply()
-
-    fig, ax = plt.subplots(figsize=style.slot(*SLOT_NORMAL_FORM))
-    ax.set_xlim(0, 20)
-    ax.set_ylim(0, 8)
-    _hide_axes(ax)
-    fs = style.SMALL_FONT_PT
-
-    # --- 左: H_k の分解 ---
-    ax.add_patch(Rectangle((0.6, 3.8), 6.6, 2.9, facecolor=GREY, alpha=0.16,
-                           edgecolor=GREY, lw=1.0))
-    ax.add_patch(Rectangle((0.6, 0.9), 6.6, 2.9, facecolor=ORANGE, alpha=0.16,
-                           edgecolor=ORANGE, lw=1.0))
-    ax.text(3.9, 6.95, r"$H_k$: degree-$k$ terms", color=FG, fontsize=fs,
-            ha="center", va="bottom")
-    ax.text(3.9, 5.65, r"$\mathrm{Im}\, L_J$", color=LIGHT_GREY, fontsize=fs,
-            ha="center", va="center")
-    ax.text(3.9, 4.55, "removable", color=LIGHT_GREY, fontsize=fs,
-            ha="center", va="center")
-    ax.text(3.9, 2.75, "complement", color=ORANGE, fontsize=fs,
-            ha="center", va="center")
-    ax.text(3.9, 1.65, "resonant — stays", color=ORANGE, fontsize=fs,
-            ha="center", va="center")
-
-    # --- 変換の矢印 ---
-    _arrow(ax, (7.7, 3.8), (11.3, 3.8), FG, lw=1.5)
-    ax.text(9.5, 4.2, r"$x = y + h_k(y)$", color=FG, fontsize=fs,
-            ha="center", va="bottom")
-    ax.text(9.5, 3.35, r"$L_J h = Dh\,Jy - Jh$", color=GREY, fontsize=fs,
-            ha="center", va="top")
-
-    # --- 右: 正規形 ---
-    ax.add_patch(Rectangle((11.8, 1.9), 7.6, 3.8, facecolor=GREEN, alpha=0.12,
-                           edgecolor=GREEN, lw=1.0))
-    ax.text(15.6, 5.9, "normal form", color=GREEN, fontsize=fs,
-            ha="center", va="bottom")
-    ax.text(15.6, 4.35,
-            r"$\dot{y} = Jy + \sum_{k \geq 2} G_k^{\mathrm{res}}(y)$",
-            color=FG, fontsize=fs, ha="center", va="center")
-    ax.text(15.6, 2.55, "only resonant terms remain", color=GREY,
-            fontsize=fs, ha="center", va="center")
-
-    fig.savefig(output_dir / "normal_form.png")
-    plt.close(fig)
-
-
-# ---------------------------------------------------------------------------
 # 11. A center is structurally fragile
 # ---------------------------------------------------------------------------
 
@@ -1174,6 +1121,5 @@ def generate_all(output_dir: Path) -> None:
     center_manifold(output_dir)
     center_manifold_example(output_dir)
     center_manifold_nonuniqueness(output_dir)
-    normal_form(output_dir)
     pendulum_perturbation(output_dir)
     print("  Ch.2 figures generated.")
