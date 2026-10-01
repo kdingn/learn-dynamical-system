@@ -22,8 +22,9 @@ SLOT_TANGENT_CHART = (720, 190)
 SLOT_TANGENT_SUBSPACE = (340, 240)
 SLOT_EIGENSPACES = (360, 300)
 SLOT_STABLE_MANIFOLD = (450, 255)
-SLOT_PENDULUM_MANIFOLDS = (770, 228)
+SLOT_PENDULUM_MANIFOLDS = (770, 250)
 SLOT_CONNECTIONS = (740, 196)
+SLOT_CONNECTION_ENERGY = (800, 200)
 SLOT_CENTER_MANIFOLD = (400, 230)
 SLOT_CM_EXAMPLE = (780, 292)
 SLOT_CM_NONUNIQUE = (520, 220)
@@ -673,44 +674,52 @@ def stable_manifold(output_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 def pendulum_manifolds(output_dir: Path) -> None:
-    """振り子のセパラトリクスを W^s / W^u として色分けする."""
+    """振り子のセパラトリクスを、2つのサドルの W^s / W^u として描き分ける.
+
+    サドルを q_1^* (theta = -pi), q_2^* (theta = pi) と名付け、全ての枝に
+    どのサドルの多様体かを書く。紫の弧は一方の W^u と他方の W^s が一致した部分。
+    """
     style.apply()
 
     fig, ax = plt.subplots(figsize=style.slot(*SLOT_PENDULUM_MANIFOLDS))
     fs = style.SMALL_FONT_PT
-    lim = 3.85
+    lim = 4.3
     pi = np.pi
 
     def sep(theta):
         return 2.0 * np.abs(np.cos(theta / 2.0))
 
-    # 背景: 振動軌道と回転軌道
+    # 背景: 振動軌道と回転軌道（ラベルの置き場を空けるため本数を絞る）
     th = np.linspace(-lim, lim, 900)
-    for H in (-0.55, 0.0, 0.55):
+    for H in (-0.55, 0.0):
         y2 = 2 * (H + np.cos(th))
         m = y2 > 0
         for s in (1, -1):
             yy = np.where(m, s * np.sqrt(np.maximum(y2, 0)), np.nan)
             ax.plot(th, yy, color=GREY, lw=0.6, alpha=0.55)
-    for H in (1.7, 2.4):
+    for H in (4.5,):   # 弧のラベルにかからないよう十分外側の回転軌道
         y2 = 2 * (H + np.cos(th))
         for s in (1, -1):
             ax.plot(th, s * np.sqrt(y2), color=GREY, lw=0.6, alpha=0.55)
 
-    # --- ヘテロクリニック接続 (-pi と pi を結ぶ 2 本) ---
+    # --- 2つのサドルを結ぶ弧（紫）: 一方の W^u = 他方の W^s ---
     thm = np.linspace(-pi, pi, 600)
     ax.plot(thm, sep(thm), color=PURPLE, lw=2.0, zorder=5)
     ax.plot(thm, -sep(thm), color=PURPLE, lw=2.0, zorder=5)
     _arrow(ax, (-0.35, sep(-0.35)), (0.35, sep(0.35)), PURPLE, lw=1.8)
     _arrow(ax, (0.35, -sep(0.35)), (-0.35, -sep(-0.35)), PURPLE, lw=1.8)
+    ax.text(0.0, 2.32, r"$W^u(q_1^*) = W^s(q_2^*)$", color=PURPLE,
+            fontsize=fs, ha="center", va="bottom")
+    ax.text(0.0, -2.32, r"$W^u(q_2^*) = W^s(q_1^*)$", color=PURPLE,
+            fontsize=fs, ha="center", va="top")
 
-    # --- 外側の枝: それぞれのサドルの W^s (青) / W^u (赤) ---
+    # --- 外側の枝: 相手のサドルに届かない W^s (青) / W^u (赤) ---
     tr = np.linspace(pi, lim, 300)
     tl = np.linspace(-lim, -pi, 300)
-    ax.plot(tr, sep(tr), color=RED, lw=2.0, zorder=5)      # W^u(pi)
-    ax.plot(tl, -sep(tl), color=RED, lw=2.0, zorder=5)     # W^u(-pi)
-    ax.plot(tr, -sep(tr), color=BLUE, lw=2.0, zorder=5)    # W^s(pi)
-    ax.plot(tl, sep(tl), color=BLUE, lw=2.0, zorder=5)     # W^s(-pi)
+    ax.plot(tr, sep(tr), color=RED, lw=2.0, zorder=5)      # W^u(q_2^*)
+    ax.plot(tl, -sep(tl), color=RED, lw=2.0, zorder=5)     # W^u(q_1^*)
+    ax.plot(tr, -sep(tr), color=BLUE, lw=2.0, zorder=5)    # W^s(q_2^*)
+    ax.plot(tl, sep(tl), color=BLUE, lw=2.0, zorder=5)     # W^s(q_1^*)
     _arrow(ax, (pi + 0.25, sep(pi + 0.25)), (pi + 0.62, sep(pi + 0.62)),
            RED, lw=1.5)
     _arrow(ax, (-pi - 0.25, -sep(-pi - 0.25)),
@@ -719,33 +728,32 @@ def pendulum_manifolds(output_dir: Path) -> None:
            BLUE, lw=1.5)
     _arrow(ax, (-pi - 0.62, sep(-pi - 0.62)), (-pi - 0.25, sep(-pi - 0.25)),
            BLUE, lw=1.5)
+    ax.text(lim - 0.05, 1.3, r"$W^u(q_2^*)$", color=RED,
+            fontsize=fs, ha="right", va="bottom")
+    ax.text(-lim + 0.05, -1.3, r"$W^u(q_1^*)$", color=RED,
+            fontsize=fs, ha="left", va="top")
+    ax.text(lim - 0.05, -1.3, r"$W^s(q_2^*)$", color=BLUE,
+            fontsize=fs, ha="right", va="top")
+    ax.text(-lim + 0.05, 1.3, r"$W^s(q_1^*)$", color=BLUE,
+            fontsize=fs, ha="left", va="bottom")
 
     # 固定点
     ax.plot(0, 0, "o", color=FG, ms=6, zorder=7)
     for xs in (-pi, pi):
         ax.plot(xs, 0, "s", color=ORANGE, ms=8, zorder=7)
-    # 枝のラベル（曲線から十分離して置く）
-    ax.text(lim - 0.05, sep(lim - 0.05) + 0.42, r"$W^u$", color=RED,
-            fontsize=fs, ha="right", va="bottom")
-    ax.text(-lim + 0.05, -sep(-lim + 0.05) - 0.42, r"$W^u$", color=RED,
-            fontsize=fs, ha="left", va="top")
-    ax.text(lim - 0.05, -sep(lim - 0.05) - 0.42, r"$W^s$", color=BLUE,
-            fontsize=fs, ha="right", va="top")
-    ax.text(-lim + 0.05, sep(-lim + 0.05) + 0.42, r"$W^s$", color=BLUE,
-            fontsize=fs, ha="left", va="bottom")
 
     # 領域のラベル（セパラトリクスが分ける 2 つの領域）
-    ax.text(0.0, 2.98, "rotation", color=GREY, fontsize=fs, ha="center",
+    ax.text(2.3, 3.32, "rotation", color=GREY, fontsize=fs, ha="center",
             va="center")
     ax.text(0.0, -0.52, "libration", color=GREY, fontsize=fs, ha="center",
             va="center")
 
     ax.set_xlim(-lim, lim)
-    ax.set_ylim(-3.35, 3.35)
+    ax.set_ylim(-3.7, 3.7)
     ax.set_xlabel(r"$\theta$")
     ax.set_ylabel(r"$\omega$")
     ax.set_xticks([-pi, 0, pi])
-    ax.set_xticklabels([r"$-\pi$", r"$0$", r"$\pi$"])
+    ax.set_xticklabels([r"$-\pi\ (q_1^*)$", r"$0$", r"$\pi\ (q_2^*)$"])
     ax.set_yticks([-2, 0, 2])
 
     fig.savefig(output_dir / "pendulum_manifolds.png")
@@ -763,10 +771,12 @@ def connections(output_dir: Path) -> None:
     fig, axes = plt.subplots(1, 2, figsize=style.slot(*SLOT_CONNECTIONS))
     fs = style.SMALL_FONT_PT
 
-    # --- 左: ホモクリニック（Duffing: H = y^2/2 - x^2/2 + x^4/4 = 0）---
+    # 左右の並びは connection_energy（次ページの図）と揃える: 左 = 振り子、右 = Duffing。
+
+    # --- 右: ホモクリニック（Duffing: H = y^2/2 - x^2/2 + x^4/4 = 0）---
     # 右ループは上半分が W^u（y > 0 なので原点から離れる）、下半分が W^s。
     # 左ループはその鏡像なので、上半分が W^s、下半分が W^u になる。
-    ax = axes[0]
+    ax = axes[1]
     xr = np.linspace(0.0, np.sqrt(2.0), 500)
     env = xr * np.sqrt(np.maximum(1.0 - xr**2 / 2.0, 0.0))
     ax.plot(xr, env, color=RED, lw=2.0)        # W^u (right, upper)
@@ -793,8 +803,8 @@ def connections(output_dir: Path) -> None:
     ax.set_xlim(-1.75, 1.75)
     ax.set_ylim(-1.3, 1.45)
 
-    # --- 右: ヘテロクリニック（振り子型）---
-    ax = axes[1]
+    # --- 左: ヘテロクリニック（振り子型）---
+    ax = axes[0]
     t = np.linspace(-np.pi, np.pi, 600)
     ax.plot(t, 2 * np.cos(t / 2), color=PURPLE, lw=2.0)
     ax.plot(t, -2 * np.cos(t / 2), color=PURPLE, lw=2.0)
@@ -816,6 +826,64 @@ def connections(output_dir: Path) -> None:
         _hide_axes(ax)
 
     fig.savefig(output_dir / "connections.png")
+    plt.close(fig)
+
+
+def connection_energy(output_dir: Path) -> None:
+    """接続軌道 = 山の頂上と同じエネルギーの運動、をポテンシャルで描く.
+
+    横線はエネルギー E の運動が動ける範囲 (V <= E)。山より低い = 内側、
+    ちょうど同じ = 接続軌道、高い = 外側。左右の並びは connections と揃える。
+    """
+    style.apply()
+
+    fig, axes = plt.subplots(1, 2, figsize=style.slot(*SLOT_CONNECTION_ENERGY))
+    fs = style.SMALL_FONT_PT
+
+    def _panel(ax, V, x_lo, x_hi, tops, bottoms, levels, title):
+        x = np.linspace(x_lo, x_hi, 800)
+        ax.plot(x, V(x), color=FG, lw=1.6, zorder=3)
+        for (E, color, label, lx, ly) in levels:
+            m = V(x) <= E + 1e-9
+            ax.plot(x, np.where(m, E, np.nan), color=color, lw=2.2, zorder=4)
+            ax.text(lx, ly, label, color=color, fontsize=fs, ha="center",
+                    va="center")
+        for xt in tops:
+            ax.plot(xt, V(xt), "s", color=ORANGE, ms=7, zorder=6)
+        for xb in bottoms:
+            ax.plot(xb, V(xb), "o", color=FG, ms=5, zorder=6)
+        ax.set_title(title, fontsize=fs)
+        ax.set_xlim(x_lo, x_hi)
+        _hide_axes(ax)
+
+    # --- 左: 振り子 V = -cos(theta)。山の頂上 = サドル (theta = ±pi) ---
+    pi = np.pi
+    _panel(
+        axes[0], lambda t: -np.cos(t), -1.3 * pi, 1.3 * pi,
+        tops=(-pi, pi), bottoms=(0.0,),
+        levels=(
+            (-0.3, GREEN, "inside", 0.0, -0.08),
+            (1.0, PURPLE, "connecting orbit", 0.0, 1.22),
+            (1.75, LIGHT_GREY, "outside", 0.0, 1.97),
+        ),
+        title=r"Pendulum: $V = -\cos\theta$",
+    )
+    axes[0].set_ylim(-1.2, 2.2)
+
+    # --- 右: Duffing V = -x^2/2 + x^4/4。山の頂上 = サドル (x = 0) ---
+    _panel(
+        axes[1], lambda x: -x**2 / 2 + x**4 / 4, -1.7, 1.7,
+        tops=(0.0,), bottoms=(-1.0, 1.0),
+        levels=(
+            (-0.18, GREEN, "inside", 0.0, -0.23),
+            (0.0, PURPLE, "connecting orbit", 0.0, 0.08),
+            (0.42, LIGHT_GREY, "outside", 0.0, 0.5),
+        ),
+        title=r"Duffing: $V = -x^2/2 + x^4/4$",
+    )
+    axes[1].set_ylim(-0.31, 0.66)
+
+    fig.savefig(output_dir / "connection_energy.png")
     plt.close(fig)
 
 
@@ -1102,6 +1170,7 @@ def generate_all(output_dir: Path) -> None:
     stable_manifold(output_dir)
     pendulum_manifolds(output_dir)
     connections(output_dir)
+    connection_energy(output_dir)
     center_manifold(output_dir)
     center_manifold_example(output_dir)
     center_manifold_nonuniqueness(output_dir)
