@@ -5,7 +5,9 @@
     "dev:01": "slidev --open slides/01-basics.md",
     "check:01": "rye run check-slides slides/01-basics.md --keep .slides-check",
     "dev:02": "slidev --open slides/02-manifolds.md",
-    "check:02": "rye run check-slides slides/02-manifolds.md --keep .slides-check"
+    "check:02": "rye run check-slides slides/02-manifolds.md --keep .slides-check",
+    "dev:03": "slidev --open slides/03-bifurcation.md",
+    "check:03": "rye run check-slides slides/03-bifurcation.md --keep .slides-check"
   },
   "devDependencies": {
     "@slidev/cli": "^53",

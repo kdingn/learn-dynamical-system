@@ -41,6 +41,7 @@ Learn Dynamical Systems
 ```bash
 npm run dev:01   # Ch.1 力学系の基礎と線形安定性
 npm run dev:02   # Ch.2 不変多様体と非線形解析
+npm run dev:03   # Ch.3 分岐理論
 ```
 
-章が追加されたら `dev:03`, `dev:04`, ... で起動できます。
+章が追加されたら `dev:04`, `dev:05`, ... で起動できます。
