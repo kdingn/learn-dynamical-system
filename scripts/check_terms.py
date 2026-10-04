@@ -26,18 +26,8 @@ DEFAULT_TERMS = [
 ]
 
 
-def split_slides(entry: Path) -> list[str]:
-    """Markdown を Slidev のスライド単位に分割する（先頭の headmatter は除く）."""
-    lines = entry.read_text(encoding="utf-8").splitlines()
-    chunks: list[list[str]] = [[]]
-    for line in lines:
-        if line.rstrip() == "---":
-            chunks.append([])
-        else:
-            chunks[-1].append(line)
-    if lines and lines[0].rstrip() == "---":
-        chunks = chunks[2:]
-    return ["\n".join(c) for c in chunks]
+# スライドの分割（スライドごとの frontmatter の扱いを含む）は check_slides と共通
+from check_slides import split_slides  # noqa: E402
 
 
 def main() -> int:

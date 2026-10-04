@@ -1,0 +1,15 @@
+/* Slidev がユーザールート（slides/）の style.css を全スライドに読み込む。 */
+
+/* 見出しの数式を見出しの字と同じ大きさにする。KaTeX の既定は 1.21em で、
+   数式を含む見出しだけ行が高く・字が大きくなり、スライドごとに見出しが揃わない */
+.slidev-layout h1 .katex,
+.slidev-layout h2 .katex {
+  font-size: 1em;
+}
+
+/* 文中の数式を途中で折り返さない。KaTeX は = や − の後で改行を許すため、
+   「H = ½ω² −」と「cos θ」が別の行に分かれて読めなくなる。数式は1かたまりで次の行へ送る
+   （はみ出す長さの式は check_slides.py の CLIP / TIGHT で検出される） */
+.slidev-layout .katex {
+  white-space: nowrap;
+}

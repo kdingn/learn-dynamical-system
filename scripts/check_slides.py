@@ -6,7 +6,13 @@
 * 不自然な余白が残っていないか（内容領域に対する占有率が低すぎないか）
 * 図を等倍で貼っているか（md の `width:` と PNG の画素幅が対応しているか）
 
-を機械的に判定する。目視確認の前段として使い、ここを通ってから実際に画像を見る。
+を機械的に判定する。さらに scripts/check_text.mjs で描画後の DOM を測り、
+
+* 不自然な改行（最終行が数文字だけ・短い表のセルの折り返し・狭い段組みの多行）
+* 見出しの高さの不揃い（数式で字が大きくなる等）
+* 1枚あたりの文字の多さ
+
+も報告する。目視確認の前段として使い、ここを通ってから実際に画像を見る。
 
 Usage:
     rye run check-slides slides/01-basics.md
@@ -15,6 +21,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import subprocess
 import sys
@@ -40,6 +47,11 @@ EDGE_TOL = 2.0
 # 四隅の `abs-bl` / `abs-br` 注記が入る領域。TIGHT 判定のみ免除する（CSS px）
 CORNER_W_PX = 400.0
 CORNER_H_PX = 72.0
+# `slides/global-top.vue` の現在地表示（右上、上パディング帯の中）。全スライドに
+# 出るので、この帯の右側は常に TIGHT 判定から外す。帯の高さはパディング (40px)
+# より小さく取り、図などがパディングに大きく食い込めば引き続き検出できるようにする
+TOP_LABEL_H_PX = 32.0
+TOP_LABEL_X0_PX = CANVAS_W * 0.35
 # 内容領域の高さに対する占有率がこれを下回ったら余白過多として報告
 MIN_FILL_RATIO = 0.45
 # 背景との差がこれ以上ある画素を「インク」とみなす
@@ -92,7 +104,22 @@ def split_slides(entry: Path) -> list[str]:
     # 先頭が `---` で始まるファイルでは chunks[0] が空、chunks[1] が headmatter
     if lines and lines[0].rstrip() == "---":
         chunks = chunks[2:]
-    return ["\n".join(c) for c in chunks]
+    # スライドごとの frontmatter（`---` / `part: 1` / `---`）も `---` で囲まれる
+    # ので、YAML の行だけからなる塊は次のスライドに属するものとして結合する
+    merged: list[list[str]] = []
+    pending: list[str] = []
+    for chunk in chunks:
+        body = [ln for ln in chunk if ln.strip()]
+        if body and all(FRONTMATTER_LINE_RE.match(ln) for ln in body):
+            pending = chunk
+            continue
+        merged.append(pending + chunk)
+        pending = []
+    return ["\n".join(c) for c in merged]
+
+
+#: スライドの frontmatter の1行（`key: value`）
+FRONTMATTER_LINE_RE = re.compile(r"^[A-Za-z_][\w-]*:(\s|$)")
 
 
 def analyse(path: Path, index: int, source: str = "") -> SlideReport:
@@ -109,9 +136,9 @@ def analyse(path: Path, index: int, source: str = "") -> SlideReport:
     # `abs-bl` / `abs-br` などで四隅に置く注記はパディング帯に出るのが正しい。
     # そのスライドの Markdown が実際に `abs-` を使っているときだけ四隅を
     # TIGHT 判定から外す。CLIP 判定には常に全体を使う。
-    body = mask
+    body = mask.copy()
+    body[:int(TOP_LABEL_H_PX * scale), int(TOP_LABEL_X0_PX * scale):] = False
     if "abs-" in source:
-        body = mask.copy()
         cx, cy = int(CORNER_W_PX * scale), int(CORNER_H_PX * scale)
         body[:cy, :cx] = body[:cy, -cx:] = False
         body[-cy:, :cx] = body[-cy:, -cx:] = False
@@ -203,6 +230,38 @@ def check_image_scale(entry: Path) -> list[str]:
     return problems
 
 
+#: 1枚あたりの文字数の上限（数式は1個 = 4文字で換算）。これを超えるとビジーに見える。
+#: 見取り図（<Roadmap>）のスライドは問いの一覧そのものなので数えない
+MAX_CHARS = 300
+
+
+def check_text(entry: Path, n_slides: int, sources: list[str]) -> list[str]:
+    """描画した DOM から、改行・見出し・文字数の問題を拾う（scripts/check_text.mjs）.
+
+    PNG の解析では「どこで改行されたか」「見出しの字の大きさ」が分からないので、
+    ブラウザで組まれた行の矩形を直接測る。
+    """
+    script = Path(__file__).with_name("check_text.mjs")
+    proc = subprocess.run(
+        ["node", str(script), str(entry), str(n_slides)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        sys.stderr.write(proc.stderr)
+        return ["文字の組まれ方のチェックに失敗しました（上のエラーを参照）"]
+    problems: list[str] = []
+    for r in json.loads(proc.stdout):
+        page = r["page"]
+        for issue in r["issues"]:
+            problems.append(f"p{page:>2}  {issue['msg']}")
+        src = sources[page - 1] if page - 1 < len(sources) else ""
+        if r["chars"] > MAX_CHARS and "<Roadmap" not in src:
+            problems.append(
+                f"p{page:>2}  文字が多い（{r['chars']} 字 > {MAX_CHARS}）"
+                " — 図・表に置き換えるか、スライドを分ける")
+    return problems
+
+
 def main() -> int:
     # Windows の既定は cp932 で、本スクリプトの出力（— や日本語）が落ちる
     for stream in (sys.stdout, sys.stderr):
@@ -214,6 +273,10 @@ def main() -> int:
     parser.add_argument(
         "--keep", type=Path, default=None,
         help="書き出した PNG を残すディレクトリ（目視確認用）",
+    )
+    parser.add_argument(
+        "--no-text", action="store_true",
+        help="文字の組まれ方のチェック（check_text.mjs）を省く",
     )
     args = parser.parse_args()
 
@@ -260,6 +323,15 @@ def main() -> int:
             for msg in scale_problems:
                 print(f"    - {msg}")
             bad += len(scale_problems)
+
+        if not args.no_text:
+            text_problems = check_text(args.entry, len(reports), sources)
+            if text_problems:
+                print()
+                print("  文字の組まれ方（不自然な改行・見出し・文字の多さ）:")
+                for msg in text_problems:
+                    print(f"    - {msg}")
+                bad += len(text_problems)
 
         print()
         if bad:

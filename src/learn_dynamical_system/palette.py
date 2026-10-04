@@ -10,6 +10,9 @@
 
 # Foreground colour for text, axes, ticks. スライド本文の文字色に合わせる。
 FG = "#dddddd"
+# スライドの背景色。図の背景は透過のままにし、これは図中のラベルの下敷き
+# （線の上に文字を置くときの bbox）にだけ使う。manim の背景もこの色。
+BG = "#121212"
 
 # Base colours — keep the tuple order stable so index-based access stays
 # consistent across figures and animations.
