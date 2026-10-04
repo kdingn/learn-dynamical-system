@@ -15,6 +15,8 @@ from learn_dynamical_system.palette import (
 # スライド上での表示サイズ (CSS px)。図はこの寸法ちょうどで作られるので、
 # slides/02-manifolds.md 側の `width:` 指定をこの値と一致させること。
 SLOT_CHAPTER_OVERVIEW = (820, 250)
+SLOT_FLUTTER_MOTIVATION = (820, 220)
+SLOT_FLUTTER_NORMAL_FORM = (820, 230)
 SLOT_INVARIANT_SET = (400, 252)
 SLOT_MANIFOLD_CHART = (360, 300)
 SLOT_TANGENT_SPACE = (360, 400)
@@ -24,11 +26,11 @@ SLOT_EIGENSPACES = (360, 300)
 SLOT_STABLE_MANIFOLD = (450, 255)
 SLOT_PENDULUM_MANIFOLDS = (770, 250)
 SLOT_CONNECTIONS = (740, 196)
-SLOT_CONNECTION_ENERGY = (800, 200)
+SLOT_CONNECTION_ENERGY = (800, 240)
 SLOT_CENTER_MANIFOLD = (400, 230)
 SLOT_CM_EXAMPLE = (780, 292)
 SLOT_CM_NONUNIQUE = (520, 220)
-SLOT_PENDULUM_PERTURBATION = (560, 232)
+SLOT_PENDULUM_PERTURBATION = (620, 250)
 
 
 # ---------------------------------------------------------------------------
@@ -149,7 +151,7 @@ def chapter_overview(output_dir: Path) -> None:
     ax.text(cx - 3.2, cy + 2.0, "fast", color=ORANGE, fontsize=fs,
             ha="left", va="center")
     ax.text(cx, 1.9, "Reduction on $W^c$", ha="center", fontsize=fs, color=FG)
-    ax.text(cx, 0.55, r"$\dot{x} = Ax + N_c(x, h(x))$", ha="center",
+    ax.text(cx, 0.55, r"$\dot{\boldsymbol{x}} = A\boldsymbol{x} + \boldsymbol{N}_c(\boldsymbol{x}, \boldsymbol{h}(\boldsymbol{x}))$", ha="center",
             fontsize=fs, color=GREY)
 
     # --- ステージ間の矢印 ---
@@ -1102,12 +1104,110 @@ def pendulum_perturbation(output_dir: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# 動機と Part 5: フラッター速度ちょうどでの乱れ（ねじりばねの硬化 / 軟化）
+# ---------------------------------------------------------------------------
+
+#: 硬化ばね / 軟化ばねの係数 kappa と、図での色・説明
+FLUTTER_SPRINGS = (
+    (+1.0, BLUE, r"hardening spring ($\kappa > 0$)"),
+    (-1.0, RED, r"softening spring ($\kappa < 0$)"),
+)
+#: 突風でねじれ角だけを乱した初期状態
+FLUTTER_Q0 = (0.0, 0.15, 0.0, 0.0)
+
+
+def _envelope(t, x, t_from=0.0):
+    """振動のピーク（|x| の極大）を結んだ包絡線."""
+    a = np.abs(x)
+    i = np.where((a[1:-1] >= a[:-2]) & (a[1:-1] >= a[2:]) & (t[1:-1] >= t_from))[0] + 1
+    return t[i], a[i]
+
+
+def flutter_motivation(output_dir: Path) -> None:
+    """U = U_F（線形化は中立）での ねじれ角 alpha(t)。ばねの非線形性だけが違う2つの系."""
+    from learn_dynamical_system.models.typical_section import TypicalSection
+
+    style.apply()
+    model = TypicalSection()
+    v_f = model.flutter_speed()
+    t = np.linspace(0, 600, 12000)
+
+    # 線形化の予測: 中立なモードの振幅が一定のまま残る（減衰するモードの過渡の後）
+    lin = model.response(v_f, FLUTTER_Q0, t)[:, 1]
+    _, peaks = _envelope(t, lin, t_from=100)
+    a_lin = peaks.mean()
+
+    fig, axes = plt.subplots(1, 2, figsize=style.slot(*SLOT_FLUTTER_MOTIVATION),
+                             sharey=True)
+    for ax, (kappa, color, label) in zip(axes, FLUTTER_SPRINGS):
+        ts, q = model.simulate(v_f, kappa, FLUTTER_Q0, t)
+        ax.plot(ts, q[:, 1], color=color, lw=0.8)
+        for s in (1, -1):
+            ax.axhline(s * a_lin, color=FG, lw=1.0, ls="--", alpha=0.7)
+        ax.axhline(0, color=GREY, lw=0.5, alpha=0.5)
+        verdict = "decays" if kappa > 0 else "grows"
+        ax.set_title(f"{label}: {verdict}", fontsize=style.SMALL_FONT_PT)
+        ax.set_xlim(t[0], t[-1])
+        ax.set_xlabel(r"$t$")
+    axes[0].text(590, a_lin + 0.05, "linearization: neutral", color=FG,
+                 ha="right", va="bottom", fontsize=style.SMALL_FONT_PT)
+    axes[0].set_ylim(-0.6, 0.6)
+    axes[0].set_yticks([-0.5, 0, 0.5])
+    axes[0].set_ylabel(r"$\alpha$")
+
+    fig.savefig(output_dir / "ch02_motivation.png")
+    plt.close(fig)
+
+
+def flutter_normal_form(output_dir: Path) -> None:
+    """数値解の包絡線と、縮約系 dr/dt = Re(c1) r^3 から予測した振幅の比較."""
+    from learn_dynamical_system.models.typical_section import TypicalSection
+
+    style.apply()
+    model = TypicalSection()
+    v_f = model.flutter_speed()
+
+    fig, axes = plt.subplots(1, 2, figsize=style.slot(*SLOT_FLUTTER_NORMAL_FORM))
+    t_from = 30.0  # 減衰するモードの過渡が消えてから比べる
+    for ax, (kappa, color, label), t_end in zip(axes, FLUTTER_SPRINGS, (3000, 600)):
+        nf = model.center_normal_form(v_f, kappa)
+        t = np.linspace(0, t_end, 60000)
+        ts, q = model.simulate(v_f, kappa, FLUTTER_Q0, t, alpha_max=0.6)
+        te, ae = _envelope(ts, q[:, 1], t_from=t_from)
+        ax.plot(te, ae, color=color, lw=2.2, label="simulation (4D)")
+
+        # 縮約系 dr/dt = Re(c1) r^3 の解 r(t) = r0 / sqrt(1 - 2 Re(c1) r0^2 (t - t0))
+        r0 = ae[0] / nf["alpha_per_z"]
+        tp = np.linspace(te[0], t_end, 600)
+        arg = 1.0 - 2.0 * nf["re_c1"] * r0**2 * (tp - te[0])
+        ok = arg > 0
+        amp = nf["alpha_per_z"] * r0 / np.sqrt(arg[ok])
+        keep = amp < 0.6
+        ax.plot(tp[ok][keep], amp[keep], color=FG, lw=1.4, ls="--",
+                label=r"reduced 2D: $\dot{r} = \mathrm{Re}(c_1)\, r^3$")
+        sign = "<" if nf["re_c1"] < 0 else ">"
+        ax.set_title(rf"{label}: $\mathrm{{Re}}(c_1) {sign} 0$",
+                     fontsize=style.SMALL_FONT_PT)
+        ax.set_xlim(0, t_end)
+        ax.set_ylim(0, 0.6)
+        ax.set_yticks([0, 0.2, 0.4, 0.6])
+        ax.set_xlabel(r"$t$")
+    axes[0].set_ylabel(r"amplitude of $\alpha$")
+    axes[0].legend(loc="upper right", frameon=False)
+
+    fig.savefig(output_dir / "flutter_normal_form.png")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
 def generate_all(output_dir: Path) -> None:
     """Generate all Chapter 2 figures."""
     chapter_overview(output_dir)
+    flutter_motivation(output_dir)
+    flutter_normal_form(output_dir)
     invariant_set(output_dir)
     manifold_chart(output_dir)
     tangent_space(output_dir)
