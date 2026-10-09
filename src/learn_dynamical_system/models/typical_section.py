@@ -15,13 +15,15 @@ Aeroelasticity* に倣い、長さを半翼弦 $b$、時間を $1/\\omega_\\alph
 非線形性はねじりばねの3次の項だけを入れる: ねじりの復元力 $r_\\alpha^2 \\alpha$ を
 $r_\\alpha^2 (\\alpha + \\kappa \\alpha^3)$ にする（$\\kappa > 0$ で硬化、$\\kappa < 0$ で軟化）。
 フラッターの振幅の飽和や急成長を調べる空力弾性の標準的な模型である。
+軟化ばねの振幅が大きいところで再び硬くなる場合を調べるため、5次の項
+$\\kappa_5 \\alpha^5$ も足せるようにしてある（既定は $\\kappa_5 = 0$）。
 """
 
 from dataclasses import dataclass
 
 import numpy as np
 from scipy.integrate import solve_ivp
-from scipy.optimize import brentq
+from scipy.optimize import brentq, fsolve
 
 
 @dataclass(frozen=True)
@@ -72,16 +74,22 @@ class TypicalSection:
         M = np.array([[1.0, self.x_alpha], [self.x_alpha, ra2]])
         return np.concatenate([[0.0, 0.0], -np.linalg.solve(M, [0.0, ra2])])
 
+    def _rhs(self, V: float, kappa: float, kappa5: float = 0.0):
+        """非線形系の右辺 A(V) q + (kappa alpha^3 + kappa5 alpha^5) d."""
+        A, d = self.matrix(V), self._cubic_direction()
+
+        def rhs(_, x):
+            return A @ x + (kappa * x[1] ** 3 + kappa5 * x[1] ** 5) * d
+        return rhs
+
     def simulate(self, V: float, kappa: float, q0, t: np.ndarray,
-                 alpha_max: float = 1.0) -> tuple[np.ndarray, np.ndarray]:
+                 alpha_max: float = 1.0,
+                 kappa5: float = 0.0) -> tuple[np.ndarray, np.ndarray]:
         """非線形系を数値積分する。|alpha| が alpha_max を超えたら打ち切る.
 
         返り値は (t, q)（q の shape は len(t) x 4）。打ち切った場合は短くなる。
         """
-        A, d = self.matrix(V), self._cubic_direction()
-
-        def rhs(_, x):
-            return A @ x + kappa * x[1] ** 3 * d
+        rhs = self._rhs(V, kappa, kappa5)
 
         def blow_up(_, x):
             return abs(x[1]) - alpha_max
@@ -112,3 +120,77 @@ class TypicalSection:
         return {"re_c1": float(c1.real), "omega": float(omega),
                 "alpha_per_z": float(2.0 * abs(v[1])),
                 "other_eigenvalues": lam[np.abs(np.arange(4) - k) > 0]}
+
+    # --- 周期軌道（リミットサイクル振動, LCO） ---------------------------------
+
+    def _monodromy(self, V: float, kappa: float, kappa5: float,
+                   q0: np.ndarray, period: float) -> tuple[np.ndarray, np.ndarray]:
+        """q0 から1周期積分した点 q(T) と、変分方程式によるモノドロミー行列 dq(T)/dq0."""
+        A, d = self.matrix(V), self._cubic_direction()
+
+        def rhs(_, y):
+            x, Phi = y[:4], y[4:].reshape(4, 4)
+            a = x[1]
+            dx = A @ x + (kappa * a**3 + kappa5 * a**5) * d
+            Jx = A + np.outer(d, [0.0, 3 * kappa * a**2 + 5 * kappa5 * a**4, 0.0, 0.0])
+            return np.concatenate([dx, (Jx @ Phi).ravel()])
+
+        y0 = np.concatenate([q0, np.eye(4).ravel()])
+        sol = solve_ivp(rhs, (0.0, period), y0, method="DOP853",
+                        rtol=1e-10, atol=1e-12)
+        return sol.y[:4, -1], sol.y[4:, -1].reshape(4, 4)
+
+    def periodic_orbit(self, amplitude: float, kappa: float, kappa5: float = 0.0,
+                       guess: dict | None = None) -> dict:
+        """ねじれ角の振幅が amplitude の周期軌道と、それが存在する流速 V を求める.
+
+        振幅を固定して流速を未知数にする（振幅で枝をたどるので、枝が折り返す
+        サドルノードの点でも解ける）。位相は「alpha が最大 = alpha' = 0」の点で固定し、
+        未知数 (h, h', V, T) を q(T) = q(0) の4本の式で決める（射撃法）。
+        guess を省くと、フラッター速度での固有ベクトルと正規形の予測から始める。
+
+        返り値: V, period, q0（alpha 最大の点の状態）, multipliers（Floquet 乗数のうち
+        自明な 1 を除いた3つ）, stable（3つとも単位円の内側か）。
+        """
+        if guess is None:
+            v_f = self.flutter_speed()
+            lam, vecs = np.linalg.eig(self.matrix(v_f))
+            k = int(np.argmin(np.abs(lam.real) + 10.0 * (lam.imag <= 0)))
+            q0 = (amplitude * vecs[:, k] / vecs[1, k]).real
+            nf = self.center_normal_form(v_f, kappa)
+            target = -nf["re_c1"] * (amplitude / nf["alpha_per_z"]) ** 2
+            V = brentq(lambda s: self.growth_rate(s) - target, 0.5 * v_f, 1.5 * v_f)
+            guess = {"V": V, "period": 2 * np.pi / lam[k].imag, "q0": q0}
+
+        def residual(u):
+            h, hd, V, T = u
+            q0 = np.array([h, amplitude, hd, 0.0])
+            qT, _ = self._monodromy(V, kappa, kappa5, q0, T)
+            return qT - q0
+
+        u0 = [guess["q0"][0], guess["q0"][2], guess["V"], guess["period"]]
+        u, _, ok, msg = fsolve(residual, u0, full_output=True, xtol=1e-11)
+        if ok != 1:
+            raise RuntimeError(f"periodic orbit (amplitude={amplitude}) not found: {msg}")
+        h, hd, V, T = u
+        q0 = np.array([h, amplitude, hd, 0.0])
+        _, M = self._monodromy(V, kappa, kappa5, q0, T)
+        mult = np.linalg.eigvals(M)
+        mult = np.delete(mult, int(np.argmin(np.abs(mult - 1.0))))
+        return {"V": float(V), "period": float(T), "q0": q0,
+                "multipliers": mult, "stable": bool(np.all(np.abs(mult) < 1.0))}
+
+    def lco_branch(self, amplitudes, kappa: float, kappa5: float = 0.0) -> dict:
+        """振幅の列に沿って周期軌道の枝をたどる（前の解を次の初期値にする）.
+
+        返り値は amplitude, V, stable の配列。amplitudes は小さい順に与える。
+        """
+        out = {"amplitude": [], "V": [], "stable": []}
+        guess = None
+        for a in amplitudes:
+            orb = self.periodic_orbit(float(a), kappa, kappa5, guess)
+            guess = orb
+            out["amplitude"].append(float(a))
+            out["V"].append(orb["V"])
+            out["stable"].append(orb["stable"])
+        return {k: np.array(v) for k, v in out.items()}

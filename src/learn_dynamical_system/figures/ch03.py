@@ -7,6 +7,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 from learn_dynamical_system import style
+from learn_dynamical_system.models.typical_section import TypicalSection
 from learn_dynamical_system.palette import (
     BLUE, FG, GREEN, GREY, ORANGE, PURPLE, RED,
 )
@@ -14,6 +15,7 @@ from learn_dynamical_system.palette import (
 # スライド上での表示サイズ (CSS px)。図はこの寸法ちょうどで作られるので、
 # slides/03-bifurcation.md 側の `width:` 指定をこの値と一致させること。
 SLOT_CHAPTER_OVERVIEW = (820, 250)
+SLOT_MOTIVATION = (820, 222)
 SLOT_EIGENVALUE_CROSSING = (720, 200)
 SLOT_SINGULAR_J = (760, 180)
 SLOT_PERTURBATION_DECOMP = (380, 310)
@@ -29,6 +31,7 @@ SLOT_HYSTERESIS = (380, 290)
 SLOT_IMPERFECT = (780, 220)
 SLOT_HOPF = (820, 240)
 SLOT_HOPF_EXAMPLE = (760, 260)
+SLOT_FLUTTER_HOPF = (820, 240)
 
 #: 安定な枝は実線、不安定な枝は破線（全ての分岐図で共通）
 STABLE = dict(color=BLUE, lw=2.0, ls="-")
@@ -1025,12 +1028,169 @@ def hopf_example(output_dir: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# 動機と Part 5 の例: 翼断面モデルのフラッター — 振動の振幅が流速でどう変わるか
+# ---------------------------------------------------------------------------
+
+#: ねじりばねの非線形係数 (kappa, kappa5) と図での色・説明。
+#: 硬化ばねは Ch.2 と同じ kappa = +1。軟化ばねは Ch.2 の kappa = -1 に、
+#: 振幅が大きいところで再び硬くなる 5次の項を足して振動が飽和するようにした
+FLUTTER_SPRINGS = (
+    ((+1.0, 0.0), "hardening spring"),
+    ((-1.0, 2.5), "softening spring"),
+)
+#: 流速の範囲 U / U_F と、掃引の刻み
+FLUTTER_U_RANGE = (0.9, 1.1)
+FLUTTER_U_STEP = 0.01
+FLUTTER_AMP_MAX = 0.95
+
+_LCO_CACHE: dict = {}
+
+
+def _lco_branch(model, kappa, kappa5):
+    """周期軌道の枝（振幅 → 流速と安定性）。2つの図で使うので一度だけ計算する."""
+    key = (kappa, kappa5)
+    if key not in _LCO_CACHE:
+        amps = np.linspace(0.01, 0.9, 90)
+        _LCO_CACHE[key] = model.lco_branch(amps, kappa, kappa5)
+    return _LCO_CACHE[key]
+
+
+def _sweep(model, v_f, kappa, kappa5):
+    """流速をゆっくり上げる・下げるときに落ち着く振幅（準静的な掃引）.
+
+    U < U_F の釣り合い（振幅 0）は安定、U > U_F では不安定。周期軌道の枝のうち
+    安定な部分を流速の関数として補間し、上げるときは U_F を超えるまで 0 に留まり、
+    下げるときは安定な周期軌道がある限りそれに乗り続ける。
+    """
+    b = _lco_branch(model, kappa, kappa5)
+    st = b["stable"]
+    v_st, a_st = b["V"][st] / v_f, b["amplitude"][st]
+    order = np.argsort(v_st)
+    v_st, a_st = v_st[order], a_st[order]
+    lo, hi = FLUTTER_U_RANGE
+    u = np.round(np.arange(lo, hi + 1e-9, FLUTTER_U_STEP), 4)
+    on_lco = (u >= v_st.min()) & (u <= v_st.max())
+    a_lco = np.interp(u, v_st, a_st)
+    up = np.where(u > 1.0, a_lco, 0.0)
+    down = np.where(on_lco, a_lco, 0.0)
+    return u, up, down
+
+
+def motivation(output_dir: Path) -> None:
+    """流速を上げ下げしたときの、落ち着いた振動の振幅（硬化ばね / 軟化ばね）."""
+    style.apply()
+
+    model = TypicalSection()
+    v_f = model.flutter_speed()
+    fs = style.SMALL_FONT_PT
+
+    fig, axes = plt.subplots(1, 2, figsize=style.slot(*SLOT_MOTIVATION),
+                             sharey=True)
+    titles = ("hardening spring: grows continuously",
+              "softening spring: jumps, with hysteresis")
+    for ax, ((kappa, kappa5), _), title in zip(axes, FLUTTER_SPRINGS, titles):
+        u, up, down = _sweep(model, v_f, kappa, kappa5)
+        ax.axvline(1.0, color=GREY, lw=0.8, ls=":", zorder=0)
+        ax.plot(u, up, "^", color=ORANGE, ms=5, zorder=4)
+        ax.plot(u, down, "v", color=BLUE, ms=6, mfc="none", mew=1.1, zorder=5)
+        ax.set_title(title, fontsize=fs)
+        ax.set_xlim(FLUTTER_U_RANGE[0] - 0.005, FLUTTER_U_RANGE[1] + 0.005)
+        ax.set_ylim(-0.05, FLUTTER_AMP_MAX)
+        ax.set_xticks([0.9, 0.95, 1.0, 1.05, 1.1])
+        ax.set_yticks([0, 0.4, 0.8])
+        ax.set_xlabel(r"$U / U_F$")
+
+    ax = axes[0]
+    ax.set_ylabel(r"$\hat{\alpha}$")
+    ax.text(0.915, 0.10, r"$U$ up ($\blacktriangle$)", color=ORANGE,
+            fontsize=fs, ha="left", va="bottom")
+    ax.text(0.915, 0.24, r"$U$ down ($\triangledown$)", color=BLUE,
+            fontsize=fs, ha="left", va="bottom")
+    ax.text(1.003, 0.80, r"$U_F$", color=GREY, fontsize=fs, ha="left")
+
+    # 軟化ばね: U_F で跳び上がり、下げると U_F より手前で落ちる
+    ax = axes[1]
+    u, up, down = _sweep(model, v_f, *FLUTTER_SPRINGS[1][0])
+    jump = up[np.argmax(up > 0)]
+    _arrow(ax, (1.005, 0.05), (1.005, jump - 0.06), ORANGE, lw=1.6)
+    i_drop = np.argmax(down > 0)
+    _arrow(ax, (u[i_drop] - 0.004, down[i_drop] - 0.06), (u[i_drop] - 0.004, 0.05),
+           BLUE, lw=1.6)
+    ax.text(1.003, 0.80, r"$U_F$", color=GREY, fontsize=fs, ha="left")
+
+    fig.savefig(output_dir / "ch03_motivation.png")
+    plt.close(fig)
+
+
+def flutter_hopf(output_dir: Path) -> None:
+    """周期軌道の枝（安定 / 不安定）と、正規形 r = sqrt(-sigma / l) の予測."""
+    style.apply()
+
+    model = TypicalSection()
+    v_f = model.flutter_speed()
+    fs = style.SMALL_FONT_PT
+
+    fig, axes = plt.subplots(1, 2, figsize=style.slot(*SLOT_FLUTTER_HOPF),
+                             sharey=True)
+    lo, hi = FLUTTER_U_RANGE
+    uu = np.linspace(lo, hi, 400)
+    sigma = np.array([model.growth_rate(s * v_f) for s in uu])
+    for ax, ((kappa, kappa5), name) in zip(axes, FLUTTER_SPRINGS):
+        # 釣り合い（振幅 0）: U < U_F で安定、U > U_F で不安定
+        ax.plot([lo, 1.0], [0, 0], **STABLE)
+        ax.plot([1.0, hi], [0, 0], **UNSTABLE)
+        b = _lco_branch(model, kappa, kappa5)
+        u_b, a_b, st = b["V"] / v_f, b["amplitude"], b["stable"]
+        ax.plot(u_b, np.where(st, a_b, np.nan), **STABLE)
+        # 安定と不安定の境目で線が途切れないよう、不安定側に1点重ねる
+        unst = ~st | np.r_[False, ~st[:-1]]
+        ax.plot(u_b, np.where(unst, a_b, np.nan), **UNSTABLE)
+
+        nf = model.center_normal_form(v_f, kappa)
+        ell = nf["re_c1"]
+        r2 = -sigma / ell
+        ok = r2 >= 0
+        ax.plot(uu[ok], nf["alpha_per_z"] * np.sqrt(r2[ok]), color=ORANGE,
+                lw=1.6, ls=":", zorder=6)
+        sign = "<" if ell < 0 else ">"
+        ax.set_title(rf"{name}: $\ell {sign} 0$", fontsize=fs)
+        ax.set_xlim(lo - 0.005, hi + 0.005)
+        ax.set_ylim(-0.05, FLUTTER_AMP_MAX)
+        ax.set_xticks([0.9, 0.95, 1.0, 1.05, 1.1])
+        ax.set_yticks([0, 0.4, 0.8])
+        ax.set_xlabel(r"$U / U_F$")
+
+    ax = axes[0]
+    ax.set_ylabel(r"$\hat{\alpha}$")
+    ax.text(1.06, 0.32, "stable LCO", color=BLUE, fontsize=fs, ha="left",
+            va="top")
+    ax.text(0.905, 0.52, r"normal form" "\n" r"$\hat{\alpha} \propto \sqrt{-\sigma(U)/\ell}$",
+            color=ORANGE, fontsize=fs, ha="left", va="bottom")
+
+    ax = axes[1]
+    b = _lco_branch(model, *FLUTTER_SPRINGS[1][0])
+    i_fold = int(np.argmin(b["V"]))
+    ax.plot(b["V"][i_fold] / v_f, b["amplitude"][i_fold], "o", color=GREEN,
+            ms=6, zorder=7)
+    ax.text(b["V"][i_fold] / v_f - 0.004, b["amplitude"][i_fold], "fold",
+            color=GREEN, fontsize=fs, ha="right", va="center")
+    ax.text(1.04, 0.66, "stable LCO", color=BLUE, fontsize=fs, ha="left",
+            va="top")
+    ax.text(1.006, 0.13, "unstable LCO", color=RED, fontsize=fs, ha="left",
+            va="bottom")
+
+    fig.savefig(output_dir / "flutter_hopf.png")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
 def generate_all(output_dir: Path) -> None:
     """Generate all Chapter 3 figures."""
     chapter_overview(output_dir)
+    motivation(output_dir)
     eigenvalue_crossing(output_dir)
     singular_jacobian(output_dir)
     perturbation_decomposition(output_dir)
@@ -1046,4 +1206,5 @@ def generate_all(output_dir: Path) -> None:
     imperfect(output_dir)
     hopf(output_dir)
     hopf_example(output_dir)
+    flutter_hopf(output_dir)
     print("  Ch.3 figures generated.")
